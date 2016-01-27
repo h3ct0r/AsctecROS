@@ -1,0 +1,34 @@
+<launch>
+	<group ns="hum1" if="1">
+		<include file="$(find asctec_proc)/launch/updatedLaunchFiles/new_asctec_driver_nodelets.launch" />
+		<param name="/hum1/AutoPilotNodelet/port" type="string" value="/dev/ttyUSB0"/>
+		<param name="/hum1/AutoPilotNodelet/hum" type="string" value="hum1"/>
+		<param name="/hum1/AutoPilotNodelet/height" type="int" value="8000"/> <!-- in meters -->
+		<param name="/hum1/AutoPilotNodelet/velocity" type="int" value="90"/> <!--  0..100% -->
+		<param name="/hum1/AutoPilotNodelet/plotMapOn" type="bool" value="false"/> <!-- Determines whether the plot_gps_script can run -->
+		<param name="/hum1/AutoPilotNodelet/mapFileName" type="string" value="timestamp.txt" /> <!-- So as to maintain consistency between time and map files -->
+		<param name="/hum1/AutoPilotNodelet/waypointListSize" type="int" value="0" /> <!-- Used during runtime -->
+		<param name="/hum1/AutoPilotNodelet/waypointTime" type="int" value="1" /> <!-- Time in seconds -->
+		<param name="/hum1/AutoPilotNodelet/finishedWaypoints" type="bool" value="false"/> <!-- Checks whether the quadrotor has finished its initial waypoints and running external waypoints -->
+	</group>
+
+	<group ns="hum2" if="1">
+		<include file="$(find asctec_proc)/launch/updatedLaunchFiles/new_asctec_driver_nodelets.launch"/>
+		<param name="/hum2/AutoPilotNodelet/port" type="string" value="/dev/ttyUSB1"/>
+		<param name="/hum2/AutoPilotNodelet/hum" type="string" value="hum2"/>
+		<param name="/hum2/AutoPilotNodelet/height" type="int" value="12000"/>
+		<param name="/hum2/AutoPilotNodelet/velocity" type="int" value="25"/> <!--  0..100% -->
+		<param name="/hum2/AutoPilotNodelet/plotMapOn" type="bool" value="false"/> <!-- Determines whether the plot_gps_script can run -->
+		<param name="/hum2/AutoPilotNodelet/mapFileName" type="string" value="default" /> <!-- So as to maintain consistency between time and map  -->
+		<param name="/hum2/AutoPilotNodelet/waypointListSize" type="int" value="0" />
+		<param name="/hum2/AutoPilotNodelet/waypointTime" type="int" value="1" /> <!-- Time in seconds -->
+		<param name="/hum2/AutoPilotNodelet/finishedWaypoints" type="bool" value="false"/> <!-- Checks whether the quadrotor has finished its initial waypoints and running external waypoints-->
+	</group>
+
+<!-- <node pkg="rosbag" type="record" name="record"
+     args="record -a" launch-prefix="xterm -e">
+ </node> -->
+
+</launch>
+
+	

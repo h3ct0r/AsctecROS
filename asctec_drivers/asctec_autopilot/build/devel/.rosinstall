@@ -1,0 +1,2 @@
+- setup-file:
+    local-name: /opt/ros/groovy/share/asctec_drivers/asctec_autopilot/build/devel/setup.sh

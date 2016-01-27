@@ -1,0 +1,19 @@
+<scripts>
+		<file_names>
+			<main_waypoint_files value="/var/www/gpsDataPoints.txt"/>
+			<backup_waypoint_files value="/var/www/gpsDataPointsBackup.txt"/>
+			<map_file_directory value="/var/www/GpsFlightMaps/"/>
+		</file_names>
+
+		<ros_params>
+			<hummingbird_name_param value="AutoPilotNodelet/hum"/>
+			<hummingbird_height_param value="AutoPilotNodelet/height"/>
+			<plot_map_on_param value="AutoPilotNodelet/plotMapOn"/>
+			<hummingbird_velocity_param value="AutoPilotNodelet/velocity"/>
+			<map_file_name_param value="AutoPilotNodelet/mapFileName"/>
+			<waypointList_size_param value="AutoPilotNodelet/waypointListSize"/>
+			<waypoint_time_param value="AutoPilotNodelet/waypointTime" />
+			<finishedWaypoints value="AutoPilotNodelet/finishedWaypoints" />
+			<external_base_name value="ext" />
+		</ros_params>
+</scripts>

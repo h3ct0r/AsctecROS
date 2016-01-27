@@ -1,0 +1,53 @@
+This tutorial/manual explains the details of how to send the diferent waycommands, and the configurations and response of the quadrotor after each command is sent. In total there are 4 commands that can be sent to the low level processor.
+    
+1. >*>wg "Goto waypoint"
+2. >*>wl "Launch / Set Home
+3. >*>we "End flight => land at current position"
+4. >*>wh "Come home" 
+
+For these waycommands the work the quadrotor must have both "GPS + Height Control" enabled in addition to having acquired an active gps signal after turned on. Also the RC controler must be turned on, obviously.
+
+After each command is sent to the low level processor, the former returns an acknoledgement of command received correctly, following the below form:
+	
+	* ">a[1 byte packet descriptor]a<" 
+
+
+1. >*>wg "Goto waypoint"
+
+The primary function of this command is to automatically guide the quadrotor to the waypoint that was previously sent to the low level processor through the following procedure:
+	The desired waypoint to which the quadrotor must proceed to is sent, using the WAYPOINT structure, to the low level processor. Following the waypoint sent the waycommand ">*>ws" must be sent and a confirmatory response of acknoledgement must be retrieved following the form ">a[1 byte packet descriptor]a<".
+
+After the above procedure has been correctly executed the "Goto waypoint" command can be sent to the low level processor and shortly after the quadrotor will proceed to the last waypoint sent.
+
+If the RC controller is used in anyway after the quadrotor received the "Goto waypoint" command, the same command must be sent again, but not the waypoint and ">*>ws" command. Observing the quadrotors GPS_DATA "nav_status" variable we are able to determine if the quadrotor has successfully reached the desired waypoint.
+
+
+2. >*>wl "Launch / Set Home
+
+This command can be used in one of two ways, which will be explained below.
+
+2.1 Launch Quadrotor
+
+For this command to take effect the RC controller must be turned on and the throttle lever must be in a position in which the quadrotor would normally take off (e.g. halfway or a little bit above that). Also the quadrotor must be turned on, but not the propeller engines.
+
+After sending this command to the low level processor the quadrotor will commence to initiating the propellers and gradually accelarating, thus taking off and going up continually. It is important to adjust the thrust lever accordingly, if it is at high levels the quadrotor may shoot up rapidly, which could be dangerous depending on environmental conditions of where tests are occuring.
+
+It seems that the quadrotor will continuosly ascend, after take off, until a diferent command is sent or the user operates the quadrotor using the RC Controler.
+
+2.2 Set Home Waypoint
+
+For this command to take effect the quadrotor must either be in the air in a fixed "GPS + Height Control" waypoint position or on the ground with the propellers engine on (to be confirmed). Until a diferent command is sent the quadrotor will continuosly hover around the fixed "home" position.
+
+
+3. >*>we "End flight => land at current position"
+
+After this command is sent, considering the quadrotor is in the air, a landing procedure will be initiated and the quadrotor will stop and immediately land below its current location.
+
+
+4. >*>wh "Come home" 
+
+This waypoint comand is only effective if the "Set Home Waypoint" command has been sent and acknoledged, respectively. As the name states, after this command is sent the quadrotor will return to its previously set "home" waypoint.
+
+
+
+

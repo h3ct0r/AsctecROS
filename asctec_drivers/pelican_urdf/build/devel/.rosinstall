@@ -1,0 +1,2 @@
+- setup-file:
+    local-name: /opt/ros/groovy/share/asctec_drivers/pelican_urdf/build/devel/setup.sh
