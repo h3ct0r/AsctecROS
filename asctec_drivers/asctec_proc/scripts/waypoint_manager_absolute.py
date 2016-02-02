@@ -11,6 +11,8 @@ from asctec_msgs.msg import CurrentWay
 from asctec_msgs.msg import WaypointData
 from asctec_msgs.msg import WaypointCommand
 
+from WaypointTimes import WaypointTimes
+
 import struct
 import binascii
 import os
@@ -19,9 +21,6 @@ import time
 import datetime
 import re
 import math
-from AsctecConfigParser import ConfigParser
-
-
 
 WAYPOINT_VEL = 50 # 0..100%
 
@@ -64,131 +63,6 @@ waypointList = []
 externalWaypointList = []
 waypointTime = 1
 
-configs = ConfigParser("/opt/ros/groovy/share/asctec_drivers/asctec_proc/scripts/asctec_drivers_config.xml")
-
-
-'''
-Campo de futebol pequeno
-# X is longitude
-# Y is latitude
-waypointList = [
-	{'X': -43.960432, 'Y': -19.861114, 'Z': 2},
-	{'X': -43.960288, 'Y': -19.860861, 'Z': 2},
-	{'X': -43.960597, 'Y': -19.861023, 'Z': 2},
-	{'X': -43.960338, 'Y': -19.861279, 'Z': 2},
-	{'X': -43.960124, 'Y': -19.861234, 'Z': 2}
-]
-'''
-
-#Campo de futebol grande
-# X is longitude
-# Y is latitude
-#waypointList = [
-#	{'X': -43.958376, 'Y': -19.869574, 'Z': 2},
-#	{'X': -43.958081, 'Y': -19.869348, 'Z': 2},
-#	{'X': -43.957749, 'Y': -19.869736, 'Z': 2},
-#	{'X': -43.958048, 'Y': -19.869963, 'Z': 2},
-#	{'X': -43.958046, 'Y': -19.869642, 'Z': 2} 
-#]
-
-# Small square center of futball field
-
-# waypointList = [
-# 	{'X': -43.957929611206055, 'Y': -19.869701638874098, 'Z': 2},
-# 	{'X': -43.95807445049285, 'Y': -19.869540196761694, 'Z': 2},
-# 	{'X': -43.95796447992324, 'Y': -19.869739476845407, 'Z': 2},
-# 	{'X': -43.95811200141907, 'Y': -19.86957551223782, 'Z': 2},
-# 	{'X': -43.95800203084946, 'Y': -19.869777314807695, 'Z': 2},
-# 	{'X': -43.958149552345276, 'Y': -19.869613350239256, 'Z': 2},
-# 	{'X': -19.86981767529084, 'Y': -43.95803689956665, 'Z': 2},
-# 	{'X': -43.958187103271484, 'Y': -19.86964866569908, 'Z': 2} 
-# ]
-
-
-#Points in the reitoria
-'''
-waypointList = [
- 	{'X': -43.96395117044449, 'Y': -19.866805746010677, 'Z': 2},
- 	{'X': -43.96409064531326, 'Y': -19.866588804171858, 'Z': 2},
- 	{'X': -43.96390289068222, 'Y': -19.866505558968868, 'Z': 2},
- 	{'X': -43.96387338638306, 'Y': -19.866548442866783, 'Z': 2},
- 	{'X': -43.96421402692795, 'Y': -19.866697275128367, 'Z': 2},
- 	{'X': -43.964179158210754, 'Y': -19.866737636395566, 'Z': 2},
- 	{'X': -43.96384388208389, 'Y': -19.866591326753095, 'Z': 2},
- 	{'X': -43.96381437778473, 'Y': -19.866634210627804, 'Z': 2},
- 	{'X': -43.964141607284546, 'Y': -19.866777997652502, 'Z': 2},
- 	{'X': -43.96399140357971, 'Y': -19.866767907339213, 'Z': 2},
- 	{'X': -43.96378755569458, 'Y': -19.86667709449091, 'Z': 2},
- 	{'X': -43.963758051395416, 'Y': -19.866719978342427, 'Z': 2},
- 	{'X': -43.96395117044449, 'Y': -19.866805746010677, 'Z': 2}
-]
-'''
-
-#Waypoints Hexagon no Campo de Futebol 1
-# waypointList = [{'X': -43.95809590816498, 'Y': -19.869439295357967, 'Z': 2},
-# {'Y': -43.957940340042114, 'X': -19.869525061555223, 'Z': 2},
-# {'Y': -43.957892060279846, 'X': -19.869610827706094, 'Z': 2},
-# {'Y': -43.958203196525574, 'X': -19.869439295357967, 'Z': 2},
-# {'Y': -43.95823001861572, 'X': -19.869484700997592, 'Z': 2},
-# {'Y': -43.95791351795196, 'X': -19.8696562332966, 'Z': 2},
-# {'Y': -43.957940340042114, 'X': -19.869701638874098, 'Z': 2},
-# {'Y': -43.9582622051239, 'X': -19.869525061555223, 'Z': 2},
-# {'Y': -43.95828902721405, 'X': -19.86956542210259, 'Z': 2},
-# {'Y': -43.95796716213226, 'X': -19.869741999376505, 'Z': 2},
-# {'Y': -43.957993984222405, 'X': -19.86978740492944, 'Z': 2},
-# {'Y': -43.9583158493042, 'X': -19.869610827706094, 'Z': 2},
-# {'Y': -43.95826756954193, 'X': -19.86969659381057, 'Z': 2},
-# {'Y': -43.95810127258301, 'X': -19.86978740492944, 'Z': 2},
-# {'Y': -43.9582085609436, 'X': -19.86978740492944, 'Z': 2}
-# ]
-
-#Figura Hexagono - Pontos no campo de futebol perto Antonio Carlos
-# waypointList = [
-# {'X': -43.960407972335815, 'Y': -19.860968393557826, 'Z': 2},
-# {'X': -43.96025240421295, 'Y': -19.861054164336647, 'Z': 2},
-# {'X': -43.960204124450684, 'Y': -19.861139935069094, 'Z': 2},
-# {'X': -43.96051526069641, 'Y': -19.860968393557826, 'Z': 2},
-# {'X': -43.96054208278655, 'Y': -19.861013801622978, 'Z': 2},
-# {'X': -43.9602255821228, 'Y': -19.86118534308515, 'Z': 2},
-# {'X': -43.96025240421295, 'Y': -19.861230751088193, 'Z': 2},
-# {'X': -43.96057426929474, 'Y': -19.861054164336647, 'Z': 2},
-# {'X': -43.96060109138489, 'Y': -19.861094527040045, 'Z': 2},
-# {'X': -43.9602792263031, 'Y': -19.86127111374666, 'Z': 2},
-# {'X': -43.96030604839325, 'Y': -19.861316521725147, 'Z': 2},
-# {'X': -43.96062791347504, 'Y': -19.861139935069094, 'Z': 2},
-# {'X': -43.96057963371277, 'Y': -19.861225705755157, 'Z': 2},
-# {'X': -43.960413336753845, 'Y': -19.861316521725147, 'Z': 2},
-# {'X': -43.96052062511444, 'Y': -19.861316521725147, 'Z': 2},
-# {'X': -43.96011829376221, 'Y': -19.861235796421067, 'Z': 2}
-# ]
-
-#Figura quadrada - Pontos no campo de futebol perto Antonio Carlos
-# waypointList = [{'X': -43.96051526069641, 'Y': -19.861054164336647, 'Z': 2},
-# {'X': -43.96051526069641, 'Y': -19.861235796421067, 'Z': 2},
-# {'X': -43.96032214164734, 'Y': -19.861235796421067, 'Z': 2},
-# {'X': -43.96032214164734, 'Y': -19.861054164336647, 'Z': 2},
-# {'X': -43.96051526069641, 'Y': -19.861054164336647, 'Z': 2},
-# {'X': -43.96011829376221, 'Y': -19.861235796421067, 'Z': 2}
-# ]
-
-
-
-class WaypointTimes:
-
-	def __init__(self, fileName):
-		self.f = open(fileName, 'w+')
-
-	def printWaypointSent(self, waypointIndex):
-		text = "Waypoint " + str(waypointIndex) + " sent at: " + str(time.time()) + "\n"
-		self.f.write(text)
-		# print "Called with text : " + text, self.f
-
-	def printArrivedAtWaypoint(self, waypointIndex):
-		text = "Waypoint " + str(waypointIndex) + " arrived at: " + str(time.time()) + "\n"
-		self.f.write(text)
-
-	def __del__(self):
-		self.f.close()
 
 def getWaypointsFromFile(fileName):
 	global hummBaseName, onFinishedLoadingWaypoints
@@ -199,10 +73,11 @@ def getWaypointsFromFile(fileName):
 	dataInputsFile = open(fileName, "r")
 	waypoint_list = []
 
-	print "hummBaseName" + hummBaseName
+	print "hummBaseName:", hummBaseName
 
 	#Ler as linhas do arquivo de datapoints e separa as coordenadas x e y
 	for line in dataInputsFile:
+		print "Search line:", line 
 		y = re.search(r',([-*]\d+.\d+),', line)
 		x = re.search(r',([-*]\d+.\d+)\n', line)
 
@@ -231,6 +106,7 @@ def getExternalWaypointsFromFile(fileName):
 	dataInputsFile = open(fileName, "r")
 	waypoint_list = []
 
+
 	#Ler as linhas do arquivo de datapoints e separa as coordenadas x e y
 	for line in dataInputsFile:
 		y = re.search(r',([-*]\d+.\d+),', line)
@@ -238,7 +114,8 @@ def getExternalWaypointsFromFile(fileName):
 		
 		fileBaseName = re.search(r'([\/]ext)', line)
 		if(fileBaseName != None):
-			if(fileBaseName.group(1) == '/' + str(configs.external_base_name)):
+
+			if(fileBaseName.group(1) == '/' + rospy.get_param("~externalBaseName")):
 				# print "equality: " + hummBaseName + " == " + fileQuadrotorBaseName.group(1)
 				# print hummBaseName == fileQuadrotorBaseName.group(1)
 				waypoint = {}
@@ -455,42 +332,34 @@ def dist(lat1, lon1, lat2, lon2):
 
 
 def setPlotMapGpsOn(condition):
-	global configs
 	plotMapOn = False
-	if rospy.has_param(configs.plot_map_on_param):
-		plotMapOn = rospy.get_param(configs.plot_map_on_param)
+	if rospy.has_param("~plotMapOn"):
+		plotMapOn = rospy.get_param("~plotMapOn")
 	if plotMapOn != condition:
-		rospy.set_param(configs.plot_map_on_param, condition)
-
-def initTimeKeeper():
-	global configs
-	if rospy.has_param(configs.map_file_name_param):
-		print rospy.get_param(configs.map_file_name_param)
-    	mapFileName = rospy.get_param(configs.map_file_name_param) + "TimeStamps.txt"
-	wt = WaypointTimes(mapFileName)
-	return wt
-
+		rospy.set_param("~plotMapOn", condition)
 
 
 def waypointFileChooser():
-	global configs
 	answer = ""
 	while answer != "y" and answer != "n":
 		answer = raw_input("Would you like to continue from last waypoint? [y/n]  ")
 		print answer, type(answer)
 
 	if(answer == "n"):
-		return configs.main_waypoint_files
+		return rospy.get_param("~mainWaypointFiles")
 	else:
-		return configs.backup_waypoint_files
+		return rospy.get_param("~backupWaypointFiles")
 
 
 
 def updateBackupGpsPointsFile(waypoint_index, waypointList):
-	global hummBaseName, configs
+	global hummBaseName
 	
 	newWaypointList = waypointList
-	f = open(configs.backup_waypoint_files, "w")
+	backupWaypointFiles = ""
+	if rospy.has_param("~backupWaypointFiles"):
+		backupWaypointFiles = rospy.get_param("~backupWaypointFiles")
+	f = open(backupWaypointFiles, "w")
 	
 	for waypoint in newWaypointList:
 		f.write(hummBaseName + "," + str(waypoint["Y"]) + "," + str(waypoint["X"]) + "\n")
@@ -543,8 +412,6 @@ def comeHomeQuadrotor(waypoint_cmd_publisher):
 
 ###################################################
 def setWaypointStayTimes(hummBaseName, waypointListSize):
-	global configs
-
 	humm = re.search(r'((/[a-z]+)([0-9]+))', hummBaseName)
 	
 	waypointListSizeOtherQuad = 0
@@ -559,9 +426,10 @@ def setWaypointStayTimes(hummBaseName, waypointListSize):
 		hummBase = humm.group(2)
 		hummBaseNameOtherQuad = hummBase + str(hummOtherQuadNumber) + "/"
 
+
 		#Extracts the other quads waypointList size from param
-		if rospy.has_param(hummBaseNameOtherQuad + configs.waypointList_size_param):
-			waypointListSizeOtherQuad = rospy.get_param(hummBaseNameOtherQuad + str(configs.waypointList_size_param))
+		if rospy.has_param(hummBaseNameOtherQuad + "WaypointManager/waypointListSize"):
+			waypointListSizeOtherQuad = rospy.get_param(hummBaseNameOtherQuad + "WaypointManager/waypointListSize")
 
 		print "hummBaseNameOtherQuad -  " + hummBaseNameOtherQuad  + ":  ", waypointListSizeOtherQuad
 
@@ -571,24 +439,22 @@ def setWaypointStayTimes(hummBaseName, waypointListSize):
 			print "Time multiplier: ", timeMultiplier
 
 			#Current quads size is larger, multiply its waypoint time (timeMultiplier squared to compensate time it takes to check waypoint)
-			if rospy.has_param(configs.waypoint_time_param):
-				currentTime = rospy.get_param(str(configs.waypoint_time_param))
-				rospy.set_param(str(configs.waypoint_time_param), int(timeMultiplier*timeMultiplier) * currentTime)
+			if rospy.has_param("~waypointTime"):
+				currentTime = rospy.get_param("~waypointTime")
+				rospy.set_param("~waypointTime", int(timeMultiplier*timeMultiplier) * currentTime)
 
 		elif (waypointListSize < waypointListSizeOtherQuad and waypointListSizeOtherQuad != 0):
 			timeMultiplier = math.ceil( waypointListSizeOtherQuad / float(waypointListSize))
 			print "Time multiplier: ", timeMultiplier
 
 			# Other quads waypoint list is larger, multiply its waypoint time
-			currentTime = rospy.get_param(hummBaseNameOtherQuad + str(configs.waypoint_time_param))
-			rospy.set_param(hummBaseNameOtherQuad + str(configs.waypoint_time_param), int(timeMultiplier*timeMultiplier) * currentTime)
+			currentTime = rospy.get_param(hummBaseNameOtherQuad + "WaypointManager/waypointTime")
+			rospy.set_param(hummBaseNameOtherQuad + "WaypointManager/waypointTime", int(timeMultiplier*timeMultiplier) * currentTime)
 
 	print "\n\n"
 
 
 def checkOtherQuadrotorFinishedStatus():
-	global configs
-
 	humm = re.search(r'((/[a-z]+)([0-9]+))', hummBaseName)
 	
 	waypointListSizeOtherQuad = 0
@@ -603,8 +469,8 @@ def checkOtherQuadrotorFinishedStatus():
 		hummBaseNameOtherQuad = hummBase + str(hummOtherQuadNumber) + "/"
 
 		#Extracts the other quads waypointList size from param
-		if rospy.has_param(hummBaseNameOtherQuad + configs.finishedWaypoints):
-			otherQuadIsFinished = rospy.get_param(hummBaseNameOtherQuad + str(configs.finishedWaypoints))
+		if rospy.has_param(hummBaseNameOtherQuad + "WaypointManager/finishedWaypoints"):
+			otherQuadIsFinished = rospy.get_param(hummBaseNameOtherQuad + "WaypointManager/finishedWaypoints")
 
 		print "hummBaseNameOtherQuad -  " + hummBaseNameOtherQuad  + ":  ", otherQuadIsFinished
 
@@ -618,8 +484,8 @@ def checkOtherQuadrotorFinishedStatus():
 		hummBaseNameOtherQuad = hummBase + str(hummOtherQuadNumber) + "/"
 
 		#Extracts the other quads waypointList size from param
-		if rospy.has_param(hummBaseNameOtherQuad + configs.finishedWaypoints):
-			otherQuadIsFinished = rospy.get_param(hummBaseNameOtherQuad + str(configs.finishedWaypoints))
+		if rospy.has_param(hummBaseNameOtherQuad + "WaypointManager/finishedWaypoints"):
+			otherQuadIsFinished = rospy.get_param(hummBaseNameOtherQuad + "WaypointManager/finishedWaypoints")
 
 		print "hummBaseNameOtherQuad -  " + hummBaseNameOtherQuad  + ":  ", otherQuadIsFinished
 
@@ -633,23 +499,20 @@ def checkOtherQuadrotorFinishedStatus():
 
 def initialize_node():
 	global nav_status, distance_to_wp, battery_val, lat_val, lon_val, height_val_imu, gps_speedy, gps_speedx, gps_numSV, hummBaseName, roslaunch_height, waypointList, WAYPOINT_VEL
-	global onFinishedLoadingWaypoints, configs, waypointTime, externalWaypointList
+	global onFinishedLoadingWaypoints, waypointTime, externalWaypointList
 
 	rospy.init_node('waypoint_manager')
-	if rospy.has_param(str(configs.hummingbird_name_param)):
-		hummBaseName = "/" + rospy.get_param(str(configs.hummingbird_name_param))
-	if rospy.has_param(configs.hummingbird_height_param):
-		roslaunch_height = rospy.get_param(str(configs.hummingbird_height_param))
-	if rospy.has_param(str(configs.hummingbird_velocity_param)):
-		WAYPOINT_VEL = rospy.get_param(str(configs.hummingbird_velocity_param))
 
+	hummBaseName = "/" + rospy.get_param("~quadName", "hum1")
+	roslaunch_height = rospy.get_param("~height", 8000)
+	WAYPOINT_VEL = rospy.get_param("~velocity", 90)
 
 	# Need to fix how the backup file chooser updates
 	# file_name = ""
 	# file_name = waypointFileChooser()
 
 	#Hardcoded for now
-	file_name = configs.main_waypoint_files
+	file_name = rospy.get_param("~mainWaypointFiles", "/var/www/gpsDataPoints.txt")
 
 
 	thisQuadisRunningExternalWaypoints = False
@@ -660,21 +523,24 @@ def initialize_node():
 	#If points aren't being loaded from file onFinishedLoadingWaypoints = True, else False
 	waypointList = getWaypointsFromFile(file_name)
 
+	print 'Waypoint filename:', file_name 
+
 
 	#Backup in case hardcoded points are being read, instead of from file.
 	onFinishedLoadingWaypoints = True
 
 
 	# Sets the current quads waypointList_size_param
-	if rospy.has_param(str(configs.waypointList_size_param)):
-			rospy.set_param(str(configs.waypointList_size_param), len(waypointList))
+	if rospy.has_param("~waypointListSize"):
+			rospy.set_param("~waypointListSize", len(waypointList))
 	rospy.sleep(2)
+
 	# Used to configure the respective waypoint times for the pair of quadrotors
 	setWaypointStayTimes(hummBaseName, len(waypointList))
 
 	# Sets time quadrotor will stay at waypoint
-	if rospy.has_param(str(configs.waypoint_time_param)):
-		waypointTime = rospy.get_param(str(configs.waypoint_time_param))
+	if rospy.has_param("~waypointTime"):
+		waypointTime = rospy.get_param("~waypointTime")
 
 	# print "Current Quad Waypoint Time: ", waypointTime
 
@@ -694,9 +560,6 @@ def initialize_node():
 
 	# rospy.sleep(3)
 	r = rospy.Rate(2)
-
-
-
 
 
 	# Test to see if quadrotor launches
@@ -743,7 +606,7 @@ def initialize_node():
 	counterToSendWaypointAgain = 0
 
 	# Class that keeps timestamps of waypoints sent and arrived at.
-	wt = initTimeKeeper()
+	wt = WaypointTimes()
 	wt.printWaypointSent(waypoint_index)
 
 
@@ -792,8 +655,8 @@ def initialize_node():
 				# print "		** No more waypoints to send!"
 				# print "		** Program terminated!"
 				# Set the quadrotor to finished main waypoints
-				if rospy.has_param(str(configs.finishedWaypoints)):
-					rospy.set_param(str(configs.finishedWaypoints), True)
+				if rospy.has_param("~finishedWaypoints"):
+					rospy.set_param("~finishedWaypoints", True)
 
 				otherQuadIsFinished = checkOtherQuadrotorFinishedStatus()
 
@@ -852,5 +715,5 @@ def initialize_node():
 	landQuadrotor(waypoint_cmd_publisher)
 
 if __name__ == "__main__":
-    initialize_node()
-    rospy.spin()
+	initialize_node()
+	rospy.spin()

@@ -1,0 +1,30 @@
+<launch>
+	<group ns="hum1" if="1">
+		<include file="$(find asctec_proc)/launch/updatedLaunchFiles/new_asctec_driver_nodelets.launch"/>
+		<param name="AutoPilotNodelet/port" type="string" value="/dev/ttyUSB0"/> <!-- Port to comunicate with the drone-->
+		<node pkg="asctec_proc" type="waypoint_manager_absolute.py" name="WaypointManager" args="load asctec_proc/AsctecProcNodelet pelican_manager" launch-prefix="xterm -e">
+	  		<param name="droneName" type="string" value="hum1"/> <!-- Mesmo nome que o namespace -->
+			<param name="height" type="int" value="8000"/> <!-- in centimeters -->
+			<param name="velocity" type="int" value="90"/> <!--  0..100% -->
+			<param name="plotMapOn" type="bool" value="false"/> <!-- Determines whether the plot_gps_script can run -->
+			<param name="mapFileName" type="string" value="/tmp/timestamp.txt" /> <!-- So as to maintain consistency between time and map files -->
+			<param name="waypointListSize" type="int" value="0" /> <!-- Used during runtime -->
+			<param name="waypointTime" type="int" value="1" /> <!-- Time in seconds -->
+			<param name="finishedWaypoints" type="bool" value="false"/> <!-- Checks whether the quadrotor has finished its initial waypoints and running external waypoints -->
+			
+			<param name="mainWaypointFiles" type="string" value="/var/www/gpsDataPoints.txt"/>
+			<param name="backupWaypointFiles" type="string" value="/var/www/gpsDataPointsBackup.txt"/>
+			<param name="mapFileDirectory" type="string" value="/var/www/GpsFlightMaps/"/>
+			<param name="externalBaseName" type="string" value="ext"/>
+		
+		</node>
+	</group>
+
+
+     	<!-- 
+	<node pkg="rosbag" type="record" name="record" args="record -a" launch-prefix="xterm -e"> </node>
+	-->
+
+</launch>
+
+	
