@@ -21,7 +21,6 @@ def load_tiny_futball_field():
 	return waypointList
 
 
-
 # Big futebol field
 # X is longitude
 # Y is latitude
