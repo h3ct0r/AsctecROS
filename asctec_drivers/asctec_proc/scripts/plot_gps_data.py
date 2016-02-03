@@ -20,15 +20,10 @@ from asctec_msgs.msg import LLStatus
 from asctec_msgs.msg import IMUCalcData
 from asctec_msgs.msg import GPSData
 
-from AsctecConfigParser import ConfigParser
-
 counter = 0
 dataList = []
 plotMapOn = False
 file_name = ""
-
-configs = ConfigParser("/opt/ros/groovy/share/asctec_drivers/asctec_proc/scripts/asctec_drivers_config.xml")
-
 
 #Usado para dar o nome do arquivo onde o mapa sera criado
 ts = time.time();
@@ -204,9 +199,9 @@ def callback(data):
     #if len(dataList) > 99:
      # dataList.pop()
 
-
-    if rospy.has_param(configs.plot_map_on_param):
-      plotMapOn = rospy.get_param(configs.plot_map_on_param)
+    full_param = rospy.search_param('WaypointManager/plotMapOn')  
+    if rospy.has_param(full_param):
+      plotMapOn = rospy.get_param(full_param)
     if plotMapOn:
       dataList.append(data)
       generateHTML()
@@ -226,18 +221,23 @@ def listener():
    
     rospy.init_node('listener', anonymous=True)
     hummBaseName = ""
-    if rospy.has_param(str(configs.hummingbird_name_param)):
-      hummBaseName = rospy.get_param(str(configs.hummingbird_name_param))
+
+    full_param = rospy.search_param('WaypointManager/quadName')
+    if rospy.has_param(full_param):
+      hummBaseName = rospy.get_param(full_param)
     
     print "Quadrotor:  ", hummBaseName
     rospy.Subscriber("/" + hummBaseName + "/asctec/GPS_DATA", GPSData, callback)
 
     
     #Cria um nome do arquivo novo, diferente de todos os outros
-    file_name = configs.map_file_directory + ts.group(1) + hummBaseName
+    full_param = rospy.search_param('WaypointManager/mapFileDirectory')
+    file_name = rospy.get_param(full_param) + ts.group(1) + hummBaseName
+
     
     # Sends the file path + name to maintain consistency between time and map files.
-    rospy.set_param(configs.map_file_name_param, file_name)
+    full_param = rospy.search_param('WaypointManager/mapFileName')
+    rospy.set_param(full_param, file_name)
 
     file_name = file_name + ".html"
 
