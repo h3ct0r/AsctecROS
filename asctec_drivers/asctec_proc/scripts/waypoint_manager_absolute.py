@@ -12,6 +12,7 @@ from asctec_msgs.msg import WaypointData
 from asctec_msgs.msg import WaypointCommand
 
 from WaypointTimes import WaypointTimes
+from Quadrotor import Quadrotor
 
 import struct
 import binascii
@@ -21,8 +22,6 @@ import time
 import datetime
 import re
 import math
-
-WAYPOINT_VEL = 50 # 0..100%
 
 MIN_YAW_REF =  0.0
 MAX_YAW_REF = 360.0
@@ -49,8 +48,6 @@ distance_to_wp = 0
 min_distance_inside_waypoint = 50
 
 onFinishedLoadingWaypoints = False
-hummBaseName = ""
-roslaunch_height = 0
 height_val_imu = 0
 # speed in x (E/W) and y(N/S) in mm/s
 gps_speedx = 0 
@@ -58,83 +55,14 @@ gps_speedy = 0
 #Numero de satelites
 gps_numSV = 0 
 
-
-waypointList = []
-externalWaypointList = []
+quad = None # Class Quadrotor
 waypointTime = 1
 
-
-def getWaypointsFromFile(fileName):
-	global hummBaseName, onFinishedLoadingWaypoints
-	print "functionGetWaypointsFromFile called"
-	# base_path = "/var/www/"
-	#Arquivo onde sao guardados os pontos de GPS calculados pelo JS do localhost
-	# dataInputsFile = open(base_path + "gpsDataPoints.txt", "r")
-	dataInputsFile = open(fileName, "r")
-	waypoint_list = []
-
-	print "hummBaseName:", hummBaseName
-
-	#Ler as linhas do arquivo de datapoints e separa as coordenadas x e y
-	for line in dataInputsFile:
-		print "Search line:", line 
-		y = re.search(r',([-*]\d+.\d+),', line)
-		x = re.search(r',([-*]\d+.\d+)\n', line)
-
-		fileQuadrotorBaseName = re.search(r'([\/]hum\d)', line)
-
-		if fileQuadrotorBaseName != None:
-			if(hummBaseName == fileQuadrotorBaseName.group(1)):
-				# print "equality: " + hummBaseName + " == " + fileQuadrotorBaseName.group(1)
-				# print hummBaseName == fileQuadrotorBaseName.group(1)
-				waypoint = {}
-				waypoint['X'] = float(x.group(1))
-				waypoint['Y'] = float(y.group(1))
-				waypoint['Z'] = 2
-				waypoint_list.append(waypoint)
-
-	dataInputsFile.close()
-	onFinishedLoadingWaypoints = True
-	return waypoint_list
-
-def getExternalWaypointsFromFile(fileName):
-	print "getExternalWaypointsFromFile() called"
-	global externalWaypointList
-	# base_path = "/var/www/"
-	#Arquivo onde sao guardados os pontos de GPS calculados pelo JS do localhost
-	# dataInputsFile = open(base_path + "gpsDataPoints.txt", "r")
-	dataInputsFile = open(fileName, "r")
-	waypoint_list = []
-
-
-	#Ler as linhas do arquivo de datapoints e separa as coordenadas x e y
-	for line in dataInputsFile:
-		y = re.search(r',([-*]\d+.\d+),', line)
-		x = re.search(r',([-*]\d+.\d+)\n', line)
-		
-		fileBaseName = re.search(r'([\/]ext)', line)
-		if(fileBaseName != None):
-
-			if(fileBaseName.group(1) == '/' + rospy.get_param("~externalBaseName")):
-				# print "equality: " + hummBaseName + " == " + fileQuadrotorBaseName.group(1)
-				# print hummBaseName == fileQuadrotorBaseName.group(1)
-				waypoint = {}
-				waypoint['X'] = float(x.group(1))
-				waypoint['Y'] = float(y.group(1))
-				waypoint['Z'] = 2
-				waypoint_list.append(waypoint)
-
-	dataInputsFile.close()
-	return waypoint_list
-
-# print "getWaypointsFromFile"
-# # Passa todos os pontos GPS calculados pelo JS para o formato waypointList = [{"X": xvalue, "Y": yvalue}]
-# waypointList = getWaypointsFromFile()
-
+VERBOSE = 1
 
 
 class Waypoint:
-	def __init__(self, x=0.0, y=0.0, z=0.0, heading=0.0):
+	def __init__(self, x=0.0, y=0.0, z=0.0, heading=0.0, velocity=50):
 		
 		self.wp_number	= 1 # always 1
 		self.dummy_1 	= 0 # (don't care)
@@ -145,7 +73,7 @@ class Waypoint:
 		#self.properties	= WPPROP_AUTOMATICGOTO 
 		#WPPROP_HEIGHTENABLED + 
 		# Velocidade do quadrotor de 0 a 3m/s
-		self.max_speed 	= WAYPOINT_VEL # 0-100%
+		self.max_speed 	= velocity # 0-100%
 		#Tempo que o Quadrotor fica no waypoint
 		self.time 		= waypointTime * 100 # in 1/100th s
 		self.pos_acc 	= 2000 # (2m) in mm, how close it can be to be 'at the waypoint'
@@ -218,28 +146,28 @@ class Waypoint:
 									self.height)		# i = int
 										
 	#########################################################################
-	def show(self):	
-		# print "x = " + str(self.X) + "\ty = " + str(self.Y) + "\tz = " + str(self.height) + "\tyaw = " + str(self.yaw)
-		print "\nDENTRO DO publish_waypoint_by_index()"
-		print "wp_number: ", self.wp_number
-		print "dummy 1: ", self.dummy_1
-		print "dummy 2: ", self.dummy_2
-		print "properties: ", self.properties
-		print "max_speed: ", self.max_speed
-		print "time at waypoint: ", self.time
-		print "position accuracy: ", self.pos_acc
-		print "chksum: ", self.chksum_short
-		print "X: ", self.X
-		print "Y: ", self.Y
-		print "yaw: ", self.yaw
-		print "height: ", self.height
+#	def show(self):	
+#		# print "x = " + str(self.X) + "\ty = " + str(self.Y) + "\tz = " + str(self.height) + "\tyaw = " + str(self.yaw)
+#		print "\nDENTRO DO publish_waypoint_by_index()"
+#		print "wp_number: ", self.wp_number
+#		print "dummy 1: ", self.dummy_1
+#		print "dummy 2: ", self.dummy_2
+#		print "properties: ", self.properties
+#		print "max_speed: ", self.max_speed
+#		print "time at waypoint: ", self.time
+#		print "position accuracy: ", self.pos_acc
+#		print "chksum: ", self.chksum_short
+#		print "X: ", self.X
+#		print "Y: ", self.Y
+#		print "yaw: ", self.yaw
+#		print "height: ", self.height
 
-	def generateWPforROSPublish(self):	
-		rosCommand = "'{wp_number: "+str(self.wp_number)+", dummy_1: 0, dummy_2: 0, properties: "+str(self.properties)+", max_speed: "+str(self.max_speed)+", time: "+str(self.time)+", pos_acc: "+str(self.pos_acc)+", chksum: "+str(self.chksum_short)+", X: "+str(self.X)+", Y: "+str(self.Y)+", yaw: "+str(self.yaw)+", height: "+str(int(self.zref))+"'}"
-		return rosCommand
+	#def generateWPforROSPublish(self):	
+	#	rosCommand = "'{wp_number: "+str(self.wp_number)+", dummy_1: 0, dummy_2: 0, properties: "+str(self.properties)+", max_speed: "+str(self.max_speed)+", time: "+str(self.time)+", pos_acc: "+str(self.pos_acc)+", chksum: "+str(self.chksum_short)+", X: "+str(self.X)+", Y: "+str(self.Y)+", yaw: "+str(self.yaw)+", height: "+str(int(self.zref))+"'}"
+	#	return rosCommand
 
-	def getValuesAsDict(self):
-		return {'wp_number': self.wp_number, 'dummy_1': 0, 'dummy_2': 0, 'properties': self.properties, 'max_speed': self.max_speed, 'time': self.time, 'pos_acc': self.pos_acc, 'chksum': self.chksum_short, 'X': self.X, 'Y': self.Y, 'yaw': self.yaw, 'height': self.height}
+	#def getValuesAsDict(self):
+	#	return {'wp_number': self.wp_number, 'dummy_1': 0, 'dummy_2': 0, 'properties': self.properties, 'max_speed': self.max_speed, 'time': self.time, 'pos_acc': self.pos_acc, 'chksum': self.chksum_short, 'X': self.X, 'Y': self.Y, 'yaw': self.yaw, 'height': self.height}
 
 	def getWaypointStruct(self):
 		wp_data = WaypointData()
@@ -292,12 +220,12 @@ def currentw_callback(data):
 
 
 def imuCalcData_callback(data):
-	global height_val_imu
-	height_val_imu = int(data.height) #height after data fusion [mm]
-	# height_val = int(data.height_reference) # height measured by the pressure sensor [mm]
+    global height_val_imu
+    height_val_imu = int(data.height) #height after data fusion [mm]
+    # height_val = int(data.height_reference) # height measured by the pressure sensor [mm]
 
 def publish_waypoint_by_index(waypoint_cmd_publisher, waypoint_data_publisher, waypoint_index):
-    global hummBaseName, roslaunch_height
+    global quad
     print "PUBLISHING WAYPOINT"
 
     #Before the command was set to send before the waypoint is ready. Was moved to here in the code.
@@ -306,8 +234,8 @@ def publish_waypoint_by_index(waypoint_cmd_publisher, waypoint_data_publisher, w
     wp_command.header.stamp = rospy.get_rostime()
     waypoint_cmd_publisher.publish(wp_command)
 
-    current_wp = waypointList[waypoint_index]
-    wp = Waypoint(current_wp['X'], current_wp['Y'], roslaunch_height, 0)
+    current_wp = quad.waypointList[waypoint_index]
+    wp = Waypoint(current_wp['X'], current_wp['Y'], quad.height, 0, quad.velocity)
     wp.get_Waypoint() #usado para calcular chksum e parametros restantes nao inicializados
     waypoint_data = wp.getWaypointStruct()
     waypoint_data.header.stamp = rospy.get_rostime()
@@ -339,21 +267,21 @@ def setPlotMapGpsOn(condition):
 		rospy.set_param("~plotMapOn", condition)
 
 
-def waypointFileChooser():
-	answer = ""
-	while answer != "y" and answer != "n":
-		answer = raw_input("Would you like to continue from last waypoint? [y/n]  ")
-		print answer, type(answer)
-
-	if(answer == "n"):
-		return rospy.get_param("~mainWaypointFiles")
-	else:
-		return rospy.get_param("~backupWaypointFiles")
+#def waypointFileChooser():
+#	answer = ""
+#	while answer != "y" and answer != "n":
+#		answer = raw_input("Would you like to continue from last waypoint? [y/n]  ")
+#		print answer, type(answer)
+#
+#	if(answer == "n"):
+#		return rospy.get_param("~mainWaypointFiles")
+#	else:
+#		return rospy.get_param("~backupWaypointFiles")
 
 
 
 def updateBackupGpsPointsFile(waypoint_index, waypointList):
-	global hummBaseName
+	global quad
 	
 	newWaypointList = waypointList
 	backupWaypointFiles = ""
@@ -362,7 +290,7 @@ def updateBackupGpsPointsFile(waypoint_index, waypointList):
 	f = open(backupWaypointFiles, "w")
 	
 	for waypoint in newWaypointList:
-		f.write(hummBaseName + "," + str(waypoint["Y"]) + "," + str(waypoint["X"]) + "\n")
+		f.write(quad.name + "," + str(waypoint["Y"]) + "," + str(waypoint["X"]) + "\n")
 	
 	f.close()
 
@@ -377,7 +305,7 @@ def setHomeOrLaunchWaypoint(waypoint_cmd_publisher):
 
 
 def chooseFinalAction(answer, waypoint_cmd_publisher, waypoint_data_publisher, savedHomeLatitude=0, savedHomeLongitude=0):
-	global waypointList, roslaunch_height
+	global quad
 
 	if(answer == 1):
 		print "		** No more waypoints to send!"
@@ -411,14 +339,15 @@ def comeHomeQuadrotor(waypoint_cmd_publisher):
 	waypoint_cmd_publisher.publish(wp_command)
 
 ###################################################
-def setWaypointStayTimes(hummBaseName, waypointListSize):
-	humm = re.search(r'((/[a-z]+)([0-9]+))', hummBaseName)
+def setWaypointStayTimes(waypointListSize):
+	global quad
+	humm = re.search(r'((/[a-z]+)([0-9]+))', quad.name)
 	
 	waypointListSizeOtherQuad = 0
 	if(humm != None):
 		isOddQuadNumber = int(humm.group(3)) % 2
 	
-	# Assertion that makes sure that hummBaseName quad number exists
+	# Assertion that makes sure that quad.name quad number exists
 	if(humm != None and isOddQuadNumber):
 
 		hummCurrentQuadNumber = int(humm.group(3))
@@ -455,13 +384,14 @@ def setWaypointStayTimes(hummBaseName, waypointListSize):
 
 
 def checkOtherQuadrotorFinishedStatus():
-	humm = re.search(r'((/[a-z]+)([0-9]+))', hummBaseName)
+	global quad
+	humm = re.search(r'((/[a-z]+)([0-9]+))', quad.name)
 	
 	waypointListSizeOtherQuad = 0
 	if(humm != None):
 		isOddQuadNumber = int(humm.group(3)) % 2
 	
-	# Assertion that makes sure that hummBaseName quad number exists and is odd, gets the next quadrotor.
+	# Assertion that makes sure that quad.name quad number exists and is odd, gets the next quadrotor.
 	if(humm != None and isOddQuadNumber):
 		hummCurrentQuadNumber = int(humm.group(3))
 		hummOtherQuadNumber = hummCurrentQuadNumber + 1
@@ -476,7 +406,7 @@ def checkOtherQuadrotorFinishedStatus():
 
 		return otherQuadIsFinished
 
-	# Assertion that makes sure that hummBaseName quad number exists and is odd, gets the previous quadrotor.
+	# Assertion that makes sure that quad.name quad number exists and is odd, gets the previous quadrotor.
 	elif (humm != None and not isOddQuadNumber):
 		hummCurrentQuadNumber = int(humm.group(3))
 		hummOtherQuadNumber = hummCurrentQuadNumber - 1
@@ -498,45 +428,30 @@ def checkOtherQuadrotorFinishedStatus():
 ####################################################
 
 def initialize_node():
-	global nav_status, distance_to_wp, battery_val, lat_val, lon_val, height_val_imu, gps_speedy, gps_speedx, gps_numSV, hummBaseName, roslaunch_height, waypointList, WAYPOINT_VEL
-	global onFinishedLoadingWaypoints, waypointTime, externalWaypointList
+	global nav_status, distance_to_wp, battery_val, lat_val, lon_val, height_val_imu, gps_speedy, gps_speedx, gps_numSV
+	global onFinishedLoadingWaypoints, waypointTime
+
+	global quad
 
 	rospy.init_node('waypoint_manager')
 
-	hummBaseName = "/" + rospy.get_param("~quadName", "hum1")
-	roslaunch_height = rospy.get_param("~height", 8000)
-	WAYPOINT_VEL = rospy.get_param("~velocity", 90)
+	quad = Quadrotor(VERBOSE=1)
 
 	# Need to fix how the backup file chooser updates
 	# file_name = ""
-	# file_name = waypointFileChooser()
+	# file_name = waypointFileChooser() # (rezeck) I dont not what that mean
 
-	#Hardcoded for now
-	file_name = rospy.get_param("~mainWaypointFiles", "/var/www/gpsDataPoints.txt")
-
+	quad.getWaypointFromFile(VERBOSE=1) # Get the externalWaypoint list and the wapoints list from file
 
 	thisQuadisRunningExternalWaypoints = False
-
-	# Gets the extra external waypoints
-	externalWaypointList = getExternalWaypointsFromFile(file_name)
-
-	#If points aren't being loaded from file onFinishedLoadingWaypoints = True, else False
-	waypointList = getWaypointsFromFile(file_name)
-
-	print 'Waypoint filename:', file_name 
-
 
 	#Backup in case hardcoded points are being read, instead of from file.
 	onFinishedLoadingWaypoints = True
 
-
-	# Sets the current quads waypointList_size_param
-	if rospy.has_param("~waypointListSize"):
-			rospy.set_param("~waypointListSize", len(waypointList))
 	rospy.sleep(2)
 
 	# Used to configure the respective waypoint times for the pair of quadrotors
-	setWaypointStayTimes(hummBaseName, len(waypointList))
+	setWaypointStayTimes(quad.waypointListSize)
 
 	# Sets time quadrotor will stay at waypoint
 	if rospy.has_param("~waypointTime"):
@@ -545,18 +460,18 @@ def initialize_node():
 	# print "Current Quad Waypoint Time: ", waypointTime
 
 
-	print "waypointList size: " + str(len(waypointList))
-	print "Hum, Height, Velocity", hummBaseName, roslaunch_height, WAYPOINT_VEL
+	print "waypointList size: " + str(quad.waypointListSize)
+	print "Hum, Height, Velocity", quad.name, quad.height, quad.velocity
 
 	
 	if (onFinishedLoadingWaypoints == True):
-		rospy.Subscriber(hummBaseName + "/asctec/LL_STATUS", LLStatus, ll_callback)
-		rospy.Subscriber(hummBaseName + "/asctec/GPS_DATA", GPSData, gps_callback)
-		rospy.Subscriber(hummBaseName + "/asctec/CURRENT_WAY", CurrentWay, currentw_callback)
-		rospy.Subscriber(hummBaseName + "/asctec/IMU_CALCDATA", IMUCalcData, imuCalcData_callback)
+		rospy.Subscriber(quad.name + "/asctec/LL_STATUS", LLStatus, ll_callback)
+		rospy.Subscriber(quad.name + "/asctec/GPS_DATA", GPSData, gps_callback)
+		rospy.Subscriber(quad.name + "/asctec/CURRENT_WAY", CurrentWay, currentw_callback)
+		rospy.Subscriber(quad.name + "/asctec/IMU_CALCDATA", IMUCalcData, imuCalcData_callback)
 
-		waypoint_cmd_publisher = rospy.Publisher(hummBaseName + '/asctec/WAYCOMMAND', WaypointCommand)
-		waypoint_data_publisher = rospy.Publisher(hummBaseName + '/asctec/WAYPOINT', WaypointData)
+		waypoint_cmd_publisher = rospy.Publisher(quad.name + '/asctec/WAYCOMMAND', WaypointCommand)
+		waypoint_data_publisher = rospy.Publisher(quad.name + '/asctec/WAYPOINT', WaypointData)
 
 	# rospy.sleep(3)
 	r = rospy.Rate(2)
@@ -578,7 +493,7 @@ def initialize_node():
 
 	savedHomeLatitude = lat_val
 	savedHomeLongitude = lon_val
-	firstWaypoint = waypointList[0]
+	firstWaypoint = quad.waypointList[0]
 
 	#The default setting is do nothing homeAnswer=1
 	homeAnswer = 3
@@ -616,14 +531,14 @@ def initialize_node():
 
 		os.system('clear') # Clear the shell
 
-		current_wp = waypointList[waypoint_index]
+		current_wp = quad.waypointList[waypoint_index]
 		distance_calculated = dist(lat_val, lon_val, current_wp['Y'], current_wp['X'])
 
 		ts = time.time()
 		st = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
 
 		print st
-		print "Quadrotor:  ", hummBaseName
+		print "Quadrotor:  ", quad.name
 		print "Distance calculated in m:", distance_calculated
 		print "Distance generated by UAV:", distance_to_wp
 		print "Navigation status        :", nav_status
@@ -632,8 +547,8 @@ def initialize_node():
 		# print "Quadrotor speed_y (N/S)  :", gps_speedy
 		print "Number of satelites      :", gps_numSV
 		print "Height (IMU)             :", height_val_imu, "m"
-		print "Waypoint Velocity        :", WAYPOINT_VEL, "%"
-		print "Waypoint List Size       :", str(len(waypointList))
+		print "Waypoint Velocity        :", quad.velocity, "%"
+		print "Waypoint List Size       :", str(quad.waypointListSize)
 		print "Current waypoint Number  :", waypoint_index
 		print "Current waypoint (Y, X)  :", current_wp['Y'], current_wp['X']
 
@@ -651,7 +566,7 @@ def initialize_node():
 			print "		** Distance inside waypoint reached!"
 			wt.printArrivedAtWaypoint(waypoint_index)
 
-			if(waypoint_index >= len(waypointList)-1):
+			if(waypoint_index >= quad.waypointListSize-1):
 				# print "		** No more waypoints to send!"
 				# print "		** Program terminated!"
 				# Set the quadrotor to finished main waypoints
@@ -662,7 +577,7 @@ def initialize_node():
 
 				if not otherQuadIsFinished and not thisQuadisRunningExternalWaypoints:
 					thisQuadisRunningExternalWaypoints = True
-					waypointList = externalWaypointList
+					quad.waypointListSize = quad.externalWaypointList
 					waypoint_index = 0
 					thisQuadisRunningExternalWaypoints = True
 
