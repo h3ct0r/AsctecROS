@@ -1,7 +1,24 @@
 #!/usr/bin/python
+import struct
+import binascii
+from asctec_msgs.msg import WaypointData
+
+# if set waypoint is interpreted as absolute coordinates, else relative coords
+WPPROP_ABSCOORDS 		= 0x01
+# set new height at waypoint
+WPPROP_HEIGHTENABLED 	= 0x02
+# set new yaw-angle at waypoint (not yet implemented)
+WPPROP_YAWENABLED 		= 0x04
+# if set, vehicle will not wait for a goto command, but goto this waypoint directly
+WPPROP_AUTOMATICGOTO 	= 0x10
+# if set, photo camera is triggered when waypoint is reached and time to stay is 80% up (not available on pelican!)
+WPPROP_CAM_TRIGGER 		= 0x20
+
+MIN_YAW_REF =  0.0
+MAX_YAW_REF = 360.0
 
 class Waypoint:
-	def __init__(self, x=0.0, y=0.0, z=0.0, heading=0.0):
+	def __init__(self, x=0.0, y=0.0, z=0.0, heading=0.0, velocity=0, waypointTime=1):
 		
 		self.wp_number	= 1 # always 1
 		self.dummy_1 	= 0 # (don't care)
@@ -12,7 +29,7 @@ class Waypoint:
 		#self.properties	= WPPROP_AUTOMATICGOTO 
 		#WPPROP_HEIGHTENABLED + 
 		# Velocidade do quadrotor de 0 a 3m/s
-		self.max_speed 	= WAYPOINT_VEL # 0-100%
+		self.max_speed 	= velocity # 0-100%
 		#Tempo que o Quadrotor fica no waypoint
 		self.time 		= waypointTime * 100 # in 1/100th s
 		self.pos_acc 	= 2000 # (2m) in mm, how close it can be to be 'at the waypoint'
@@ -22,7 +39,6 @@ class Waypoint:
 		self.X = 		int(x*(10**7)) # [mm]
 		self.Y = 		int(y*(10**7)) # [mm]
 		
-			
 		# self.height =	int(z*1000) # [mm]
 		self.height = int(z) # [mm]
 		############################
@@ -83,30 +99,6 @@ class Waypoint:
 									self.Y, 			# i = int
 									self.yaw,			# i = int 
 									self.height)		# i = int
-										
-	#########################################################################
-	def show(self):	
-		# print "x = " + str(self.X) + "\ty = " + str(self.Y) + "\tz = " + str(self.height) + "\tyaw = " + str(self.yaw)
-		print "\nDENTRO DO publish_waypoint_by_index()"
-		print "wp_number: ", self.wp_number
-		print "dummy 1: ", self.dummy_1
-		print "dummy 2: ", self.dummy_2
-		print "properties: ", self.properties
-		print "max_speed: ", self.max_speed
-		print "time at waypoint: ", self.time
-		print "position accuracy: ", self.pos_acc
-		print "chksum: ", self.chksum_short
-		print "X: ", self.X
-		print "Y: ", self.Y
-		print "yaw: ", self.yaw
-		print "height: ", self.height
-
-	def generateWPforROSPublish(self):	
-		rosCommand = "'{wp_number: "+str(self.wp_number)+", dummy_1: 0, dummy_2: 0, properties: "+str(self.properties)+", max_speed: "+str(self.max_speed)+", time: "+str(self.time)+", pos_acc: "+str(self.pos_acc)+", chksum: "+str(self.chksum_short)+", X: "+str(self.X)+", Y: "+str(self.Y)+", yaw: "+str(self.yaw)+", height: "+str(int(self.zref))+"'}"
-		return rosCommand
-
-	def getValuesAsDict(self):
-		return {'wp_number': self.wp_number, 'dummy_1': 0, 'dummy_2': 0, 'properties': self.properties, 'max_speed': self.max_speed, 'time': self.time, 'pos_acc': self.pos_acc, 'chksum': self.chksum_short, 'X': self.X, 'Y': self.Y, 'yaw': self.yaw, 'height': self.height}
 
 	def getWaypointStruct(self):
 		wp_data = WaypointData()
@@ -126,3 +118,29 @@ class Waypoint:
 		# self.show()		
 
 		return wp_data
+										
+	#########################################################################
+	# def show(self):	
+	# 	# print "x = " + str(self.X) + "\ty = " + str(self.Y) + "\tz = " + str(self.height) + "\tyaw = " + str(self.yaw)
+	# 	print "\nDENTRO DO publish_waypoint_by_index()"
+	# 	print "wp_number: ", self.wp_number
+	# 	print "dummy 1: ", self.dummy_1
+	# 	print "dummy 2: ", self.dummy_2
+	# 	print "properties: ", self.properties
+	# 	print "max_speed: ", self.max_speed
+	# 	print "time at waypoint: ", self.time
+	# 	print "position accuracy: ", self.pos_acc
+	# 	print "chksum: ", self.chksum_short
+	# 	print "X: ", self.X
+	# 	print "Y: ", self.Y
+	# 	print "yaw: ", self.yaw
+	# 	print "height: ", self.height
+
+	#def generateWPforROSPublish(self):	
+	#	rosCommand = "'{wp_number: "+str(self.wp_number)+", dummy_1: 0, dummy_2: 0, properties: "+str(self.properties)+", max_speed: "+str(self.max_speed)+", time: "+str(self.time)+", pos_acc: "+str(self.pos_acc)+", chksum: "+str(self.chksum_short)+", X: "+str(self.X)+", Y: "+str(self.Y)+", yaw: "+str(self.yaw)+", height: "+str(int(self.zref))+"'}"
+	#	return rosCommand
+
+	#def getValuesAsDict(self):
+	#	return {'wp_number': self.wp_number, 'dummy_1': 0, 'dummy_2': 0, 'properties': self.properties, 'max_speed': self.max_speed, 'time': self.time, 'pos_acc': self.pos_acc, 'chksum': self.chksum_short, 'X': self.X, 'Y': self.Y, 'yaw': self.yaw, 'height': self.height}
+
+
