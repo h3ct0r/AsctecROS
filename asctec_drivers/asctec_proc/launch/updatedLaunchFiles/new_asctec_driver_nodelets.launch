@@ -49,10 +49,11 @@
   </node>
 
   #### Waypoint Manager ###################################
-  
+  <!--
   <node pkg="asctec_proc" type="waypoint_manager_absolute.py" name="WaypointManager" 
   args="load asctec_proc/AsctecProcNodelet pelican_manager" launch-prefix="xterm -e">
   </node>
+-->
 
   #### Plot GPS DATA ######################################
 
