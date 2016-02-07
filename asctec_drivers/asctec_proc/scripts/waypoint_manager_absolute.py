@@ -4,18 +4,12 @@ import roslib; roslib.load_manifest('asctec_mon')
 import rospy
 import sys
 
-from asctec_msgs.msg import LLStatus
-from asctec_msgs.msg import IMUCalcData
-from asctec_msgs.msg import GPSData
-from asctec_msgs.msg import CurrentWay
-from asctec_msgs.msg import WaypointData
-from asctec_msgs.msg import WaypointCommand
-
 from WaypointTimes import WaypointTimes
 from Quadrotor import Quadrotor
+from Waypoint import Waypoint
 
-import struct
-import binascii
+from asctec_msgs.msg import WaypointCommand
+
 import os
 import math
 import time
@@ -23,206 +17,14 @@ import datetime
 import re
 import math
 
-MIN_YAW_REF =  0.0
-MAX_YAW_REF = 360.0
-
-# if set waypoint is interpreted as absolute coordinates, else relative coords
-WPPROP_ABSCOORDS 		= 0x01
-# set new height at waypoint
-WPPROP_HEIGHTENABLED 	= 0x02
-# set new yaw-angle at waypoint (not yet implemented)
-WPPROP_YAWENABLED 		= 0x04
-# if set, vehicle will not wait for a goto command, but goto this waypoint directly
-WPPROP_AUTOMATICGOTO 	= 0x10
-# if set, photo camera is triggered when waypoint is reached and time to stay is 80% up (not available on pelican!)
-WPPROP_CAM_TRIGGER 		= 0x20
-
-nav_status = 0
-lat_val = 0
-lon_val = 0
-height_val = 5
-heading_val = 0
-battery_val = 0
-distance_to_wp = 0
-
 min_distance_inside_waypoint = 50
 
 onFinishedLoadingWaypoints = False
-height_val_imu = 0
-# speed in x (E/W) and y(N/S) in mm/s
-gps_speedx = 0 
-gps_speedy = 0
-#Numero de satelites
-gps_numSV = 0 
 
 quad = None # Class Quadrotor
-waypointTime = 1
 
 VERBOSE = 1
 
-
-class Waypoint:
-	def __init__(self, x=0.0, y=0.0, z=0.0, heading=0.0, velocity=50):
-		
-		self.wp_number	= 1 # always 1
-		self.dummy_1 	= 0 # (don't care)
-		self.dummy_2	= 0 # (don't care)
-		self.properties	= WPPROP_ABSCOORDS + WPPROP_YAWENABLED + WPPROP_HEIGHTENABLED
-		# + WPPROP_YAWENABLED
-		#+ WPPROP_AUTOMATICGOTO
-		#self.properties	= WPPROP_AUTOMATICGOTO 
-		#WPPROP_HEIGHTENABLED + 
-		# Velocidade do quadrotor de 0 a 3m/s
-		self.max_speed 	= velocity # 0-100%
-		#Tempo que o Quadrotor fica no waypoint
-		self.time 		= waypointTime * 100 # in 1/100th s
-		self.pos_acc 	= 2000 # (2m) in mm, how close it can be to be 'at the waypoint'
-		
-		#Waypoint initialization
-		# X is Longitude, Y is Latitude
-		self.X = 		int(x*(10**7)) # [mm]
-		self.Y = 		int(y*(10**7)) # [mm]
-		
-			
-		# self.height =	int(z*1000) # [mm]
-		self.height = int(z) # [mm]
-		############################
-		if heading < MIN_YAW_REF:
-			heading = MIN_YAW_REF
-		if heading > MAX_YAW_REF:
-			heading = MAX_YAW_REF
-
-		self.yaw = 	int(heading*1000) # [deg*1000]
-		############################
-		self.chksum = 0
-		############################
-		self.chksum_short = 0
-
-		
-	#########################################################################
-	# cria waypoint para mandar
-	# number: 1..n
-	# x, y, z: [m]
-	# heading: [deg]
-	#########################################################################
-	def get_Waypoint(self):
-
-		# calcula o checksum with absolute coordinates (lat and long)
-		self.chksum = (0xaaaa+ self.yaw + self.height +self.time+self.X+self.Y+self.max_speed+self.pos_acc+self.properties+self.wp_number)
-		#  Calculates cksum with
-		# self.chksum = (0xAAAA+ self.yaw + 5000 +self.time+(self.X/(10**7))+(self.Y/(10**7))+self.max_speed+self.pos_acc+self.properties+self.wp_number)
-		# delimita o checksum
-
-		self.chksum = self.chksum % 32768
-
-		#B = unsigned char, H = unsigned short, h = short, 4i = four int's g iiii)
-		New_position = struct.Struct('BBHBBHHh4i')
-
-		checksum = struct.Struct('h')
-		checksum = checksum.pack(self.chksum)
-		#print "unpack! ",struct.unpack('H', checksum);
-
-		hexstring = binascii.hexlify(checksum)
-		hexlist = [hexstring[i:i+2] for i in range(0,len(hexstring), 2)]
-		hexlistreversed = list(reversed(hexlist))
-		inthexreversed = ''.join(hexlistreversed)
-		x = int(hexstring, 16)
-		#print "chcksum :",hexstring, "int :", x, " hexlistreversed :", inthexreversed, 16
-		self.chksum_short = struct.unpack('h', checksum)[0]
-		#self.chksum_short = x
-
-
-		return New_position.pack(	self.wp_number,		# B = unsigned char
-									self.dummy_1,		# B = unsigned char
-									self.dummy_2,		# H = unsigned short
-									self.properties,	# B = unsigned char
-									self.max_speed,		# B = unsigned char
-									self.time,			# H = unsigned short
-									self.pos_acc,		# H = unsigned short
-									self.chksum,		# H = unsigned short (e nao h = short)
-									self.X, 			# i = int
-									self.Y, 			# i = int
-									self.yaw,			# i = int 
-									self.height)		# i = int
-										
-	#########################################################################
-#	def show(self):	
-#		# print "x = " + str(self.X) + "\ty = " + str(self.Y) + "\tz = " + str(self.height) + "\tyaw = " + str(self.yaw)
-#		print "\nDENTRO DO publish_waypoint_by_index()"
-#		print "wp_number: ", self.wp_number
-#		print "dummy 1: ", self.dummy_1
-#		print "dummy 2: ", self.dummy_2
-#		print "properties: ", self.properties
-#		print "max_speed: ", self.max_speed
-#		print "time at waypoint: ", self.time
-#		print "position accuracy: ", self.pos_acc
-#		print "chksum: ", self.chksum_short
-#		print "X: ", self.X
-#		print "Y: ", self.Y
-#		print "yaw: ", self.yaw
-#		print "height: ", self.height
-
-	#def generateWPforROSPublish(self):	
-	#	rosCommand = "'{wp_number: "+str(self.wp_number)+", dummy_1: 0, dummy_2: 0, properties: "+str(self.properties)+", max_speed: "+str(self.max_speed)+", time: "+str(self.time)+", pos_acc: "+str(self.pos_acc)+", chksum: "+str(self.chksum_short)+", X: "+str(self.X)+", Y: "+str(self.Y)+", yaw: "+str(self.yaw)+", height: "+str(int(self.zref))+"'}"
-	#	return rosCommand
-
-	#def getValuesAsDict(self):
-	#	return {'wp_number': self.wp_number, 'dummy_1': 0, 'dummy_2': 0, 'properties': self.properties, 'max_speed': self.max_speed, 'time': self.time, 'pos_acc': self.pos_acc, 'chksum': self.chksum_short, 'X': self.X, 'Y': self.Y, 'yaw': self.yaw, 'height': self.height}
-
-	def getWaypointStruct(self):
-		wp_data = WaypointData()
-
-		wp_data.wp_number = self.wp_number
-		wp_data.dummy_1 = self.dummy_1
-		wp_data.dummy_2 = self.dummy_2
-		wp_data.properties = self.properties
-		wp_data.max_speed = self.max_speed
-		wp_data.time = self.time
-		wp_data.pos_acc = self.pos_acc
-		wp_data.chksum = self.chksum_short
-		wp_data.X = self.X
-		wp_data.Y = self.Y
-		wp_data.yaw = self.yaw
-		wp_data.height = self.height
-		# self.show()		
-
-		return wp_data
-	#########################################################################
-
-def gps_callback(data):
-    global lat_val, lon_val, height_val, heading_val, gps_numSV, gps_speedx, gps_speedy
-
-    lat_val = float(data.latitude)/float(10**7)
-    lon_val = float(data.longitude)/float(10**7)
-    height_val = float(data.height)/1000.0
-    heading_val = float(data.heading)/1000.0
-    gps_numSV = int(data.numSV)
-    gps_speedx = int(data.speed_x)
-    gps_speedy = int(data.speed_y)
-
-    #print 'Lat: {0:+12.7f}'.format(lat_val)
-    #print 'Lon: {0:+12.7f}'.format(lon_val)
-    #print 'Height: {0: 7.3f}m'.format(height_val)
-    #print 'Heading: {0: 7.3f}'.format(heading_val)
-
-def ll_callback(data):
-    global battery_val
-    battery_val = float(data.battery_voltage_1)/1000.0
-    #print 'Battery: {0:.3f}V'.format(battery_val)
-
-def currentw_callback(data):
-    global nav_status, distance_to_wp
-    nav_status = int(data.navigation_status)
-    distance_to_wp = float(data.distance_to_wp)*float(10)
-
-    #print 'Nav status: '+str(nav_status)
-    #print 'Distance to WP in CM: {0:.1f}'.format(distance_to_wp)
-
-
-def imuCalcData_callback(data):
-    global height_val_imu
-    height_val_imu = int(data.height) #height after data fusion [mm]
-    # height_val = int(data.height_reference) # height measured by the pressure sensor [mm]
 
 def publish_waypoint_by_index(waypoint_cmd_publisher, waypoint_data_publisher, waypoint_index):
     global quad
@@ -235,7 +37,7 @@ def publish_waypoint_by_index(waypoint_cmd_publisher, waypoint_data_publisher, w
     waypoint_cmd_publisher.publish(wp_command)
 
     current_wp = quad.waypointList[waypoint_index]
-    wp = Waypoint(current_wp['X'], current_wp['Y'], quad.height, 0, quad.velocity)
+    wp = Waypoint(current_wp['X'], current_wp['Y'], quad.height, 0, quad.velocity, quad.waypointTime)
     wp.get_Waypoint() #usado para calcular chksum e parametros restantes nao inicializados
     waypoint_data = wp.getWaypointStruct()
     waypoint_data.header.stamp = rospy.get_rostime()
@@ -295,15 +97,6 @@ def updateBackupGpsPointsFile(waypoint_index, waypointList):
 	f.close()
 
 
-
-def setHomeOrLaunchWaypoint(waypoint_cmd_publisher):
-	wp_command = WaypointCommand()
-	wp_command.cmd = ">*>wl"
-	wp_command.header.stamp = rospy.get_rostime()
-	waypoint_cmd_publisher.publish(wp_command)
-
-
-
 def chooseFinalAction(answer, waypoint_cmd_publisher, waypoint_data_publisher, savedHomeLatitude=0, savedHomeLongitude=0):
 	global quad
 
@@ -318,25 +111,10 @@ def chooseFinalAction(answer, waypoint_cmd_publisher, waypoint_data_publisher, s
 	else:
 		#Before the command was set to send before the waypoint is ready. Was moved to here in the code.
 		print "Quadrotor returning to previously set Home Waypoint"
-		comeHomeQuadrotor(waypoint_cmd_publisher)
+		quad.comeHomeQuadrotor()
 
 		raw_input("Land quadrotor?")
-		landQuadrotor(waypoint_cmd_publisher)
-
-
-
-
-def landQuadrotor(waypoint_cmd_publisher):
-	wp_command = WaypointCommand()
-	wp_command.cmd = ">*>we"
-	wp_command.header.stamp = rospy.get_rostime()
-	waypoint_cmd_publisher.publish(wp_command)
-
-def comeHomeQuadrotor(waypoint_cmd_publisher):
-	wp_command = WaypointCommand()
-	wp_command.cmd = ">*>wh"
-	wp_command.header.stamp = rospy.get_rostime()
-	waypoint_cmd_publisher.publish(wp_command)
+		quad.landQuadrotor()
 
 ###################################################
 def setWaypointStayTimes(waypointListSize):
@@ -428,8 +206,7 @@ def checkOtherQuadrotorFinishedStatus():
 ####################################################
 
 def initialize_node():
-	global nav_status, distance_to_wp, battery_val, lat_val, lon_val, height_val_imu, gps_speedy, gps_speedx, gps_numSV
-	global onFinishedLoadingWaypoints, waypointTime
+	global onFinishedLoadingWaypoints
 
 	global quad
 
@@ -439,9 +216,9 @@ def initialize_node():
 
 	# Need to fix how the backup file chooser updates
 	# file_name = ""
-	# file_name = waypointFileChooser() # (rezeck) I dont not what that mean
+	# file_name = waypointFileChooser()
 
-	quad.getWaypointFromFile(VERBOSE=1) # Get the externalWaypoint list and the wapoints list from file
+	quad.getWaypointFromFile() # Get the externalWaypoint list and the wapoints list from file
 
 	thisQuadisRunningExternalWaypoints = False
 
@@ -453,25 +230,8 @@ def initialize_node():
 	# Used to configure the respective waypoint times for the pair of quadrotors
 	setWaypointStayTimes(quad.waypointListSize)
 
-	# Sets time quadrotor will stay at waypoint
-	if rospy.has_param("~waypointTime"):
-		waypointTime = rospy.get_param("~waypointTime")
-
-	# print "Current Quad Waypoint Time: ", waypointTime
-
-
 	print "waypointList size: " + str(quad.waypointListSize)
 	print "Hum, Height, Velocity", quad.name, quad.height, quad.velocity
-
-	
-	if (onFinishedLoadingWaypoints == True):
-		rospy.Subscriber(quad.name + "/asctec/LL_STATUS", LLStatus, ll_callback)
-		rospy.Subscriber(quad.name + "/asctec/GPS_DATA", GPSData, gps_callback)
-		rospy.Subscriber(quad.name + "/asctec/CURRENT_WAY", CurrentWay, currentw_callback)
-		rospy.Subscriber(quad.name + "/asctec/IMU_CALCDATA", IMUCalcData, imuCalcData_callback)
-
-		waypoint_cmd_publisher = rospy.Publisher(quad.name + '/asctec/WAYCOMMAND', WaypointCommand)
-		waypoint_data_publisher = rospy.Publisher(quad.name + '/asctec/WAYPOINT', WaypointData)
 
 	# rospy.sleep(3)
 	r = rospy.Rate(2)
@@ -480,19 +240,19 @@ def initialize_node():
 	# Test to see if quadrotor launches
 	raw_input("Launch quadrotor? ")
 	print "Quadrotor is taking off!"
-	setHomeOrLaunchWaypoint(waypoint_cmd_publisher)
+	quad.setHomeOrLaunchWaypoint()
 	
 	# Time until quadrotor has finished taking off
 	
 	raw_input("Is take off finished? (Set home waypoint)")
 	# # Set home quadrotor
-	setHomeOrLaunchWaypoint(waypoint_cmd_publisher)
+	quad.setHomeOrLaunchWaypoint()
 	
 
 	os.system('clear')
 
-	savedHomeLatitude = lat_val
-	savedHomeLongitude = lon_val
+	savedHomeLatitude = quad.lat_val
+	savedHomeLongitude = quad.lon_val
 	firstWaypoint = quad.waypointList[0]
 
 	#The default setting is do nothing homeAnswer=1
@@ -510,7 +270,7 @@ def initialize_node():
 
 	# Publish the first waypoint
 	waypoint_index = 0
-	publish_waypoint_by_index(waypoint_cmd_publisher, waypoint_data_publisher, waypoint_index)
+	publish_waypoint_by_index(quad.waypoint_cmd_publisher, quad.waypoint_data_publisher, waypoint_index)
 
 	# Initiates plot_gps_data.py to start plotting map data
 	setPlotMapGpsOn(True)
@@ -532,7 +292,7 @@ def initialize_node():
 		os.system('clear') # Clear the shell
 
 		current_wp = quad.waypointList[waypoint_index]
-		distance_calculated = dist(lat_val, lon_val, current_wp['Y'], current_wp['X'])
+		distance_calculated = dist(quad.lat_val, quad.lon_val, current_wp['Y'], current_wp['X'])
 
 		ts = time.time()
 		st = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
@@ -540,13 +300,13 @@ def initialize_node():
 		print st
 		print "Quadrotor:  ", quad.name
 		print "Distance calculated in m:", distance_calculated
-		print "Distance generated by UAV:", distance_to_wp
-		print "Navigation status        :", nav_status
-		print "Battery values           :", battery_val
-		# print "Quadrotor speed_x (E/W)  :", gps_speedx
-		# print "Quadrotor speed_y (N/S)  :", gps_speedy
-		print "Number of satelites      :", gps_numSV
-		print "Height (IMU)             :", height_val_imu, "m"
+		print "Distance generated by UAV:", quad.distance_to_wp
+		print "Navigation status        :", quad.nav_status
+		print "Battery values           :", quad.battery_val
+		# print "Quadrotor speed_x (E/W)  :", quad.gps_speedx
+		# print "Quadrotor speed_y (N/S)  :", quad.gps_speedy
+		print "Number of satelites      :", quad.gps_numSV
+		print "Height (IMU)             :", quad.height_val_imu, "m"
 		print "Waypoint Velocity        :", quad.velocity, "%"
 		print "Waypoint List Size       :", str(quad.waypointListSize)
 		print "Current waypoint Number  :", waypoint_index
@@ -555,14 +315,14 @@ def initialize_node():
 
 		# Backup in case the quadrotor stops for some reason, or we have to move it.
 		counterToSendWaypointAgain += 1
-		if(counterToSendWaypointAgain == 20 and nav_status != 7):
-			publish_waypoint_by_index(waypoint_cmd_publisher, waypoint_data_publisher, waypoint_index)
+		if(counterToSendWaypointAgain == 20 and quad.nav_status != 7):
+			publish_waypoint_by_index(quad.waypoint_cmd_publisher, quad.waypoint_data_publisher, waypoint_index)
 			counterToSendWaypointAgain = 0
 
 
-		# if(distance_to_wp <= min_distance_inside_waypoint):
+		# if(quad.distance_to_wp <= min_distance_inside_waypoint):
 		# When waypoint is reached
-		if (nav_status == 7):
+		if (quad.nav_status == 7):
 			print "		** Distance inside waypoint reached!"
 			wt.printArrivedAtWaypoint(waypoint_index)
 
@@ -583,22 +343,22 @@ def initialize_node():
 
 				else:
 					setPlotMapGpsOn(False)
-					chooseFinalAction(homeAnswer, waypoint_cmd_publisher, waypoint_data_publisher, savedHomeLatitude, savedHomeLongitude)
+					chooseFinalAction(homeAnswer, quad.waypoint_cmd_publisher, quad.waypoint_data_publisher, savedHomeLatitude, savedHomeLongitude)
 					return 0
 			else:
 				waypoint_index += 1
 				print "		** Publishing waypoint [",waypoint_index,"]" 
-				publish_waypoint_by_index(waypoint_cmd_publisher, waypoint_data_publisher, waypoint_index)
+				publish_waypoint_by_index(quad.waypoint_cmd_publisher, quad.waypoint_data_publisher, waypoint_index)
 				# This ensures that the waypoints wont jump in the list
 				count = 0
-				while nav_status == 7:
+				while quad.nav_status == 7:
 					count = count + 1
 					print "In nav_status == 7"
 					rospy.sleep(1)
 					if count == 10:
-						publish_waypoint_by_index(waypoint_cmd_publisher, waypoint_data_publisher, waypoint_index)
+						publish_waypoint_by_index(quas.waypoint_cmd_publisher, quad.waypoint_data_publisher, waypoint_index)
 					
-				# publish_waypoint_by_index(waypoint_cmd_publisher, waypoint_data_publisher, waypoint_index)
+				# publish_waypoint_by_index(quad.waypoint_cmd_publisher, quad.waypoint_data_publisher, waypoint_index)
 				wt.printWaypointSent(waypoint_index)
 		r.sleep()
 
@@ -614,20 +374,20 @@ def initialize_node():
 
 	print "\nWaiting for the quadrotor to come to Home or First Waypoint position (4m proximity radius) before landing."
 	
-	print dist(savedHomeLatitude, savedHomeLongitude, lat_val, lon_val)
+	print dist(savedHomeLatitude, savedHomeLongitude, quad.lat_val, quad.lon_val)
 
 
 	### PUT all the information below inside the repeating loop! ###
-	# while(dist(savedHomeLatitude, savedHomeLongitude, lat_val, lon_val) > 4) and (homeAnswer == 3):
-	# 	print dist(savedHomeLatitude, savedHomeLongitude, lat_val, lon_val)
+	# while(dist(savedHomeLatitude, savedHomeLongitude, quad.lat_val, quad.lon_val) > 4) and (homeAnswer == 3):
+	# 	print dist(savedHomeLatitude, savedHomeLongitude, quad.lat_val, quad.lon_val)
 
-	# while(dist(firstWaypoint['Y'], firstWaypoint['X'], lat_val, lon_val) > 4) and (homeAnswer == 2):
+	# while(dist(firstWaypoint['Y'], firstWaypoint['X'], quad.lat_val, quad.lon_val) > 4) and (homeAnswer == 2):
 	# 	pass
 
 
 	# As long as quadrotor is no instructed to Do nothing, land at current position
 	raw_input("Land quadrotor?");
-	landQuadrotor(waypoint_cmd_publisher)
+	quad.landQuadrotor()
 
 if __name__ == "__main__":
 	initialize_node()
