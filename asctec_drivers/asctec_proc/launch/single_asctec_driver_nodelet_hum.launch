@@ -2,7 +2,7 @@
 	<group ns="hum1" if="1">
 		<include file="$(find asctec_proc)/launch/updatedLaunchFiles/new_asctec_driver_nodelets.launch"/>
 		<param name="AutoPilotNodelet/port" type="string" value="/dev/ttyUSB0"/> <!-- Port to comunicate with the quadrotor-->
-		<node pkg="asctec_proc" type="waypoint_manager_absolute.py" name="WaypointManager" args="load asctec_proc/AsctecProcNodelet pelican_manager" launch-prefix="xterm -e">
+		<node pkg="asctec_proc" type="WaypointManager.py" name="WaypointManager" args="load asctec_proc/AsctecProcNodelet pelican_manager" launch-prefix="terminator -x">
 	  		<param name="quadName" type="string" value="hum1"/> <!-- Mesmo nome que o namespace -->
 			<param name="height" type="int" value="8000"/> <!-- in centimeters -->
 			<param name="velocity" type="int" value="90"/> <!--  0..100% -->
@@ -27,3 +27,4 @@
 </launch>
 
 	
+ 
