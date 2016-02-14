@@ -60,7 +60,7 @@ class Waypoint:
 	# x, y, z: [m]
 	# heading: [deg]
 	#########################################################################
-	def get_Waypoint(self):
+	def getWaypoint(self):
 
 		# calcula o checksum with absolute coordinates (lat and long)
 		self.chksum = (0xaaaa+ self.yaw + self.height +self.time+self.X+self.Y+self.max_speed+self.pos_acc+self.properties+self.wp_number)
