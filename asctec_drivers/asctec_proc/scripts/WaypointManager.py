@@ -134,7 +134,7 @@ class WaypointManager:
 		# Publish the first waypoint
 		self.currentWaypointIndex = 0
 		self.currentWaypoint = self.waypointList[self.currentWaypointIndex]
-		self.distance = quad.distanceToWp
+		self.distance = self.dist(quad.latitude, quad.longitude, self.currentWaypoint['Y'], self.currentWaypoint['X'])
 		quad.gotoWaypoint(self.currentWaypoint)
 		
 		# Initiates plot_gps_data.py to start plotting map data
