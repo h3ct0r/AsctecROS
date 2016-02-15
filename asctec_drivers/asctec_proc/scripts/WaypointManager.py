@@ -23,6 +23,11 @@ class WaypointManager:
 		# Intialize ros node
 		rospy.init_node('waypointManager')
 
+		self.waypointFile = rospy.get_param("~mainWaypointFiles", "/var/www/gpsDataPoints.txt") # file with waypoints (from GPS) to control the quadrotor
+		self.name = "/" + rospy.get_param("~quadName", "hum1") # Default Quadrotor name hum1
+		self.externalBaseName = '/' + rospy.get_param("~externalBaseName") # /ext
+
+
 
 	def setPlotMapGpsOn(self, condition):
 		plotMapOn = False
@@ -32,37 +37,105 @@ class WaypointManager:
 			rospy.set_param("~plotMapOn", condition)
 
 
+
+	# Calcute the distance (m) between Waypoint
+	def dist(self, lat1, lon1, lat2, lon2):
+		#print lat1, lon1, lat2, lon2
+		lat1 = math.radians(lat1)
+		lon1 = math.radians(lon1)
+		lat2 = math.radians(lat2)
+
+		lon2 = math.radians(lon2)
+		x = (lon2-lon1) * math.cos((lat1+lat2)/2)
+		y = (lat2-lat1)
+		d = math.sqrt(x**2+y**2) * 6378137
+		return d # in meters
+
+
+
+	def printStatus(self):
+		print "\33[1;91m                              Waypoint Status                                   \33[0m"
+		print "\33[1;91m________________________________________________________________________________\33[0m"
+		print "Current Waypoint Index             :", self.currentWaypointIndex, " of ", self.waypointListSize
+		print "Current Waypoint                   :", self.currentWaypoint['Y'], self.currentWaypoint['X']
+		print "Distance calculated by manager     :", self.distance
+		print "\33[1;91m________________________________________________________________________________\33[0m"
+
+
+
+	# This function get the /ext and the /hum*(from respective quadrotor) waypoints from main waypoint file and save in two separated list
+	def getWaypointFromFile(self):
+		if self.VERBOSE:
+			print "Loading Waypoints from ", self.waypointFile
+
+		dataInputsFile = open(self.waypointFile, "r")
+
+		self.externalWaypointList = []
+		self.waypointList = []
+
+		# Read the lines of the file and separate the x and y coordinates
+		# Saves the coordinates in their respective lists
+		for line in dataInputsFile:
+			y = re.search(r',([-*]\d+.\d+),', line)
+			x = re.search(r',([-*]\d+.\d+)\n', line)
+			
+			fileBaseName = re.search(r'([\/]ext)', line)
+			fileQuadrotorBaseName = re.search(r'([\/]hum\d)', line)
+			
+			waypoint = {}
+			waypoint['X'] = float(x.group(1))
+			waypoint['Y'] = float(y.group(1))
+			waypoint['Z'] = 2 # Maybe we can try use the height from Quadrotor
+
+			if(fileBaseName != None and fileBaseName.group(1) == self.externalBaseName): # Compare to /ext
+				self.externalWaypointList.append(waypoint)
+				
+			elif(fileQuadrotorBaseName != None and fileQuadrotorBaseName.group(1) == self.name): # Compare to /hum*
+				self.waypointList.append(waypoint)
+				
+		dataInputsFile.close()
+
+		self.externalWaypointListSize = len(self.externalWaypointList)
+		self.waypointListSize = len(self.waypointList)
+
+		# Sets the current quads waypointList_size_param
+		if rospy.has_param("~waypointListSize"):
+			rospy.set_param("~waypointListSize", self.waypointListSize)
+
+		if self.VERBOSE:
+			print "A total of " + str(self.waypointListSize) + " Waypoints and " + str(self.externalWaypointListSize) + " external Waypoints was loaded.\n"
+
+
+
 	# Initialize the Quadrotor and manages its route
 	def run(self):
 		# Initialize the callbacks and get parameters from Quadrotor
 		quad = Quadrotor(self.VERBOSE)
 
 		# Get the Waypoint list and externalWaypoint list from file
-		quad.getWaypointFromFile()
+		self.getWaypointFromFile()
 
 		# Setting for now to false
 		quad.thisQuadisRunningExternalWaypoints = False
-
-		# Sync time
-		rospy.sleep(2)
 
 		# Init ros rate
 		r = rospy.Rate(2)
 
 		# Test to see if quadrotor launches
-		raw_input("Launch quadrotor? ")
+		raw_input("\33[1;91mLaunch quadrotor? \33[0m")
 		print "Quadrotor is taking off!"
 		quad.launchQuadrotor()
 
 		# Time until quadrotor has finished taking off
-		raw_input("Is take off finished? (Set home waypoint)")
+		raw_input("\33[1;91mIs take off finished? (Set home waypoint)\33[0m")
 		# Set home quadrotor
 		quad.setHomeWaypoint()
 
 		# Publish the first waypoint
-		quad.currentWaypointIndex = 0
-		distance = quad.distanceToWp
-		quad.gotoWaypoint(quad.currentWaypointIndex)
+		self.currentWaypointIndex = 0
+		self.currentWaypoint = self.waypointList[self.currentWaypointIndex]
+		self.distance = quad.distanceToWp
+		quad.gotoWaypoint(self.currentWaypoint)
 		
 		# Initiates plot_gps_data.py to start plotting map data
 		self.setPlotMapGpsOn(True)
@@ -71,7 +144,7 @@ class WaypointManager:
 
 		# Keeps timestamp of waypoints sent and arrived at
 		wt = WaypointTimes(self.VERBOSE)
-		wt.printWaypointSent(quad.currentWaypointIndex)
+		wt.printWaypointSent(self.currentWaypointIndex)
 
 		while not rospy.is_shutdown():
 			# Clear the shell
@@ -79,18 +152,19 @@ class WaypointManager:
 
 			# Print informations about the status of Quadrotor
 			quad.printStatus()
+			self.printStatus()
 
 			# if quadrotor is not aproximating than send waypoint again
-			if quad.currentDistanceCalculated >= distance and quad.navStatus != 7: 
-				quad.gotoWaypoint(quad.currentWaypointIndex)
+			if self.dist(quad.latitude, quad.longitude, self.currentWaypoint['Y'], self.currentWaypoint['X']) >= self.distance and quad.navStatus != 7: 
+				quad.gotoWaypoint(self.currentWaypoint)
 
-			distance = quad.currentDistanceCalculated
+			self.distance = self.dist(quad.latitude, quad.longitude, self.currentWaypoint['Y'], self.currentWaypoint['X'])
 
 			if quad.navStatus == 7:
 				# Quadrotor has arrieved at current waypoint
-				wt.printArrivedAtWaypoint(waypointIndex)
+				wt.printArrivedAtWaypoint(self.currentWaypointIndex)
 
-				if quad.currentWaypointIndex >= (quad.waypointListSize-1):
+				if self.currentWaypointIndex >= (self.waypointListSize-1):
 					# TODO: Manager the quadrotor to go to external waypoint
 					# Check if other quadrotor has finish and go to external waypoints
 					if rospy.has_param("~finishedWaypoints"):
@@ -99,19 +173,20 @@ class WaypointManager:
 						break
 
 				else:
-					quad.currentWaypointIndex += 1
-					quad.gotoWaypoint(quad.currentWaypointIndex)
-					wt.printWaypointSent(quad.currentWaypointIndex)
+					self.currentWaypointIndex += 1
+					self.currentWaypoint = self.waypointList[self.currentWaypointIndex]
+					quad.gotoWaypoint(self.currentWaypoint)
+					wt.printWaypointSent(self.currentWaypointIndex)
 
 					# This ensures that the waypoints wont jump in the list
-					# It muss will test if that oc
+					# It muss will test if that really occur
 					count = 0
 					while quad.navStatus == 7:
 						count += 1
 						print "In nav_status == 7"
 						rospy.sleep(1)
 						if count == 10:
-							quad.gotoWaypoint(quad.currentWaypointIndex)
+							quad.gotoWaypoint(self.currentWaypoint)
 
 
 			r.sleep()
