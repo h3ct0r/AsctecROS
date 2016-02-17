@@ -43,7 +43,7 @@ CMAKE_BINARY_DIR = /opt/ros/groovy/share/asctec_drivers/asctec_msgs/build
 include CMakeFiles/rosbuild_clean-test-results.dir/progress.make
 
 CMakeFiles/rosbuild_clean-test-results:
-	if ! rm -rf /root/.ros/test_results/asctec_msgs; then echo WARNING:\ failed\ to\ remove\ test-results\ directory ; fi
+	if ! rm -rf /home/h3ct0r/ROS/catkin_ws_groovy/build/test_results/asctec_msgs; then echo WARNING:\ failed\ to\ remove\ test-results\ directory ; fi
 
 rosbuild_clean-test-results: CMakeFiles/rosbuild_clean-test-results
 rosbuild_clean-test-results: CMakeFiles/rosbuild_clean-test-results.dir/build.make
