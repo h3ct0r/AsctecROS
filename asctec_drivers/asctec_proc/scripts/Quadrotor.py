@@ -43,7 +43,7 @@ class Quadrotor:
 		# Variables with actual status of Quadrotor
 		self.latitude = 0
 		self.longitude = 0
-		self.height = 5
+		self.altitude = 5
 		self.heading = 0
 		self.gpsNumSV = 0
 
@@ -94,7 +94,7 @@ class Quadrotor:
 	def gpsCallback(self, data):
 		self.latitude = float(data.latitude)/float(10**7)
 		self.longitude = float(data.longitude)/float(10**7)
-		self.height = float(data.height)/1000.0
+		self.altitude = float(data.height)/1000.0
 		self.heading = float(data.heading)/1000.0
 		self.gpsNumSV = int(data.numSV)
 		self.gpsSpeedx = int(data.speed_x)

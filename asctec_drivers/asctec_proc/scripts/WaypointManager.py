@@ -56,7 +56,7 @@ class WaypointManager:
 	def printStatus(self):
 		print "\33[1;91m                              Waypoint Status                                   \33[0m"
 		print "\33[1;91m________________________________________________________________________________\33[0m"
-		print "Current Waypoint Index             :", self.currentWaypointIndex, " of ", self.waypointListSize
+		print "Current Waypoint Index             :", self.currentWaypointIndex, " of ", self.waypointListSize-1
 		print "Current Waypoint                   :", self.currentWaypoint['Y'], self.currentWaypoint['X']
 		print "Distance calculated by manager     :", self.distance
 		print "\33[1;91m________________________________________________________________________________\33[0m"
@@ -131,6 +131,8 @@ class WaypointManager:
 		# Set home quadrotor
 		quad.setHomeWaypoint()
 
+		r.sleep()
+
 		# Publish the first waypoint
 		self.currentWaypointIndex = 0
 		self.currentWaypoint = self.waypointList[self.currentWaypointIndex]
@@ -144,7 +146,7 @@ class WaypointManager:
 
 		# Keeps timestamp of waypoints sent and arrived at
 		wt = WaypointTimes(self.VERBOSE)
-		wt.printWaypointSent(self.currentWaypointIndex)
+		wt.printWaypointSent(self.currentWaypointIndex, self.currentWaypoint)
 
 		while not rospy.is_shutdown():
 			# Clear the shell
@@ -162,7 +164,7 @@ class WaypointManager:
 
 			if quad.navStatus == 7:
 				# Quadrotor has arrieved at current waypoint
-				wt.printArrivedAtWaypoint(self.currentWaypointIndex)
+				wt.printArrivedAtWaypoint(self.currentWaypointIndex, self.currentWaypoint)
 
 				if self.currentWaypointIndex >= (self.waypointListSize-1):
 					# TODO: Manager the quadrotor to go to external waypoint
@@ -176,34 +178,30 @@ class WaypointManager:
 					self.currentWaypointIndex += 1
 					self.currentWaypoint = self.waypointList[self.currentWaypointIndex]
 					quad.gotoWaypoint(self.currentWaypoint)
-					wt.printWaypointSent(self.currentWaypointIndex)
+					wt.printWaypointSent(self.currentWaypointIndex, self.currentWaypoint)
 
 					# This ensures that the waypoints wont jump in the list
 					# It muss will test if that really occur
 					count = 0
+					print "In nav_status == 7"
 					while quad.navStatus == 7:
 						count += 1
-						print "In nav_status == 7"
-						rospy.sleep(1)
-						if count == 10:
+						if count == 100:
 							quad.gotoWaypoint(self.currentWaypoint)
+							count = 0
 
 
 			r.sleep()
 
 		rospy.sleep(1)
 
-		print "\nWaiting for the quadrotor to come to Home or First Waypoint position (4m proximity radius) before landing."
-		
-		#print dist(self., savedHomeLongitude, quad.latitude, quad.longitude)
+		print "\n\33[1;93mWaiting for the quadrotor to come to Home or First Waypoint position (4m proximity radius) before landing.\33[0m\n\n"
 
+		raw_input("\33[1;91mCome quadrotor to home?\33[0m")
+		quad.comeHomeQuadrotor()
 		# As long as quadrotor is no instructed to Do nothing, land at current position
-		raw_input("Land quadrotor?");
+		raw_input("\33[1;91m\nLand quadrotor?\33[0m");
 		quad.landQuadrotor()
-
-
-
-
 
 
 

@@ -1,12 +1,10 @@
 <launch>
 
   #### Nodelet manager ####################################
-
   <node pkg="nodelet" type="nodelet" name="pelican_manager" args="manager" 
     output="screen" />
 
   #### Asctec Autopilot ###################################
-
   <node pkg="nodelet" type="nodelet" name="AutoPilotNodelet" 
     args="load asctec_autopilot/AutoPilotNodelet pelican_manager" output="screen">
 
@@ -41,23 +39,13 @@
   </node>
 
   #### Asctec Proc ########################################
-
   <node pkg="nodelet" type="nodelet" name="AsctecProcNodelet" 
     args="load asctec_proc/AsctecProcNodelet pelican_manager" output="screen">
-
-
   </node>
 
-  #### Waypoint Manager ###################################
-  <!--
-  <node pkg="asctec_proc" type="waypoint_manager_absolute.py" name="WaypointManager" 
-  args="load asctec_proc/AsctecProcNodelet pelican_manager" launch-prefix="xterm -e">
-  </node>
--->
 
   #### Plot GPS DATA ######################################
-
-  <node pkg="asctec_proc" type="plot_gps_data.py" name="PlotGpsData" 
+  <node pkg="asctec_proc" type="PlotGPSData.py" name="PlotGpsData" 
   args="load asctec_proc/AsctecProcNodelet pelican_manager">
   </node>
 

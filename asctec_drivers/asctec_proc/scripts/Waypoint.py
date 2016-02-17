@@ -24,10 +24,7 @@ class Waypoint:
 		self.dummy_1 	= 0 # (don't care)
 		self.dummy_2	= 0 # (don't care)
 		self.properties	= WPPROP_ABSCOORDS + WPPROP_YAWENABLED + WPPROP_HEIGHTENABLED
-		# + WPPROP_YAWENABLED
-		#+ WPPROP_AUTOMATICGOTO
-		#self.properties	= WPPROP_AUTOMATICGOTO 
-		#WPPROP_HEIGHTENABLED + 
+		 
 		# Velocidade do quadrotor de 0 a 3m/s
 		self.max_speed 	= velocity # 0-100%
 		#Tempo que o Quadrotor fica no waypoint
@@ -67,9 +64,8 @@ class Waypoint:
 		#  Calculates cksum with
 		# self.chksum = (0xAAAA+ self.yaw + 5000 +self.time+(self.X/(10**7))+(self.Y/(10**7))+self.max_speed+self.pos_acc+self.properties+self.wp_number)
 		# delimita o checksum
-
 		self.chksum = self.chksum % 32768
-
+		
 		#B = unsigned char, H = unsigned short, h = short, 4i = four int's g iiii)
 		New_position = struct.Struct('BBHBBHHh4i')
 
