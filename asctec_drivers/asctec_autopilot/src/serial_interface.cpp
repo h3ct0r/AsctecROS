@@ -373,6 +373,7 @@ void SerialInterface::sendWaypointCommands (Telemetry * telemetry) {
     output(cstr, 5);
 
     wait(5);
+  
     i = read (dev_,data,5);
     ROS_INFO("Command WP Response String %s",data);
     telemetry->WAYPOINT_COMMAND_.cmd = "";
@@ -385,22 +386,32 @@ void SerialInterface::sendWaypointCommands (Telemetry * telemetry) {
     unsigned char cmd[] = ">*>ws";
     //telemetry->dumpCTRL_INPUT();
 
-
+    if (strcmp(cstr, ">*>wg") != 0){
+      ROS_INFO("Command %s don't need Waypoint.", cstr);
+      return;
+    }
 
     if(telemetry->WAYPOINT_.wp_number == 0){
       ROS_ERROR("Telemtry data not set, waypoint wp_number eq to 0");
       return;
     }
 
-    int16_t calc_chksum = (short) 0xAAAA + telemetry->WAYPOINT_.yaw + telemetry->WAYPOINT_.height + telemetry->WAYPOINT_.time + telemetry->WAYPOINT_.X + telemetry->WAYPOINT_.Y + telemetry->WAYPOINT_.max_speed + telemetry->WAYPOINT_.pos_acc + telemetry->WAYPOINT_.properties + telemetry->WAYPOINT_.wp_number;
     
-    //if(telemetry->WAYPOINT_.chksum != (short) 0xAAAA + telemetry->WAYPOINT_.yaw + telemetry->WAYPOINT_.height + telemetry->WAYPOINT_.time + telemetry->WAYPOINT_.X + telemetry->WAYPOINT_.Y + telemetry->WAYPOINT_.max_speed + telemetry->WAYPOINT_.pos_acc + telemetry->WAYPOINT_.properties + telemetry->WAYPOINT_.wp_number) {
-    if(calc_chksum != telemetry->WAYPOINT_.chksum){
-      ROS_ERROR("Checksum not equal to telemetry data, chksum must be %hi and we found %hi", calc_chksum, telemetry->WAYPOINT_.chksum);
+    flush();
+    int16_t calc_chksum = (short) (0xAAAA + telemetry->WAYPOINT_.yaw + telemetry->WAYPOINT_.height + telemetry->WAYPOINT_.time + telemetry->WAYPOINT_.X + telemetry->WAYPOINT_.Y + telemetry->WAYPOINT_.max_speed + telemetry->WAYPOINT_.pos_acc + telemetry->WAYPOINT_.properties + telemetry->WAYPOINT_.wp_number);
+
+    if (calc_chksum < 0){ 
+      telemetry->WAYPOINT_.chksum = telemetry->WAYPOINT_.chksum - 32768;
+    }
+
+    //if(telemetry->WAYPOINT_.chksum != (short) (0xAAAA + telemetry->WAYPOINT_.yaw + telemetry->WAYPOINT_.height + telemetry->WAYPOINT_.time + telemetry->WAYPOINT_.X + telemetry->WAYPOINT_.Y + telemetry->WAYPOINT_.max_speed + telemetry->WAYPOINT_.pos_acc + telemetry->WAYPOINT_.properties + telemetry->WAYPOINT_.wp_number)) {
+    if((calc_chksum != telemetry->WAYPOINT_.chksum)){
+      ROS_ERROR("Checksum not equal to telemetry data, chksum must be %hi or %hi and we found %hi", calc_chksum, calc_chksum - 32768, telemetry->WAYPOINT_.chksum);
       telemetry->WAYPOINT_.chksum = calc_chksum;
       ROS_ERROR("Using Checksum %hi", calc_chksum);
       //return;
     }
+
 
     // Send waypoint command >*>wg waypoint goto
     /*char * cstr = new char [telemetry->WAYPOINT_COMMAND_.cmd.length() + 1];
