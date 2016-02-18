@@ -37,7 +37,7 @@ class PlotGPSData:
       hummBaseName = rospy.get_param(fullParam) 
     else:
       hummBaseName = ""
-    return hummBaseName
+    return str(hummBaseName)
 
 
   def getMapFileName(self):
@@ -46,7 +46,7 @@ class PlotGPSData:
 
     # Get the diretory where the file will be saved
     fullParam = rospy.search_param('WaypointManager/mapFileDirectory')
-    path = rospy.get_param(fullParam) + dt.strftime("%Y-%m-%d")
+    path = str(rospy.get_param(fullParam)) + dt.strftime("%Y-%m-%d")
 
     # Create a folder if it not exist year-month-day
     try: 
@@ -56,7 +56,7 @@ class PlotGPSData:
 
     # /hour_min_sec_hum*
     fileName = path + "/" + dt.strftime("%H_%M_%S_") + self.hummBaseName
-    return fileName
+    return str(fileName)
     
 
   def getPlotMapOnStatus(self):
