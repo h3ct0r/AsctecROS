@@ -360,7 +360,7 @@ void SerialInterface::sendWaypointCommands (Telemetry * telemetry) {
 
     /////////////////////////////////////////
     // ROS_ERROR("CMD MESSAGE IS :  %s", telemetry->WAYPOINT_COMMAND_.cmd);
-    // Treating Commands different than Waypoint
+    
     //if(telemetry->WAYPOINT_COMMAND_.cmd == ">*>wl"){
     
     //telemetry->WAYPOINT_.wp_number = 1;
@@ -385,7 +385,8 @@ void SerialInterface::sendWaypointCommands (Telemetry * telemetry) {
     flush();
     unsigned char cmd[] = ">*>ws";
     //telemetry->dumpCTRL_INPUT();
-
+    
+    // Treating Commands different than Waypoint
     if (strcmp(cstr, ">*>wg") != 0){
       ROS_INFO("Command %s don't need Waypoint.", cstr);
       return;
