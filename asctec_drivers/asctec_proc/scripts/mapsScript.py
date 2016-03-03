@@ -13,6 +13,7 @@ html = """
         </style>
 
         <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false&libraries=drawing"></script>
+        <script src="http://google-maps-utility-library-v3.googlecode.com/svn/trunk/markerwithlabel/src/markerwithlabel.js"></script>
         <script language="JavaScript">
           var marker = 'undefined';
           var waypoint = [];
@@ -40,9 +41,10 @@ html = """
                 path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
                 fillColor: 'gold',
                 fillOpacity: 1,
-                scale: 3,
+                scale: 4,
                 strokeColor: 'gold',
-                strokeWeight: 5,
+                strokeWeight: 2,
+                anchor: new google.maps.Point(0,2.6),
                 rotation: 0
               },
               map: map
@@ -67,9 +69,11 @@ html = """
             var i;
             for (i = 0; i < size; i++) {
                 var i_str = (i+1).toString();
-                waypoint.push(new google.maps.Marker({
+                waypoint.push(new MarkerWithLabel({
                     position: new google.maps.LatLng(-19.8695912, -43.9583309),
                     title: i_str,
+                    labelContent: i_str,
+                    labelInBackground: false,
                     map: map
                 }));
             }
@@ -128,6 +132,7 @@ html = """
                 scale: 4,
                 strokeColor: 'gold',
                 strokeWeight: 2,
+                anchor: new google.maps.Point(0,2.6),
                 rotation: rot}),
             marker.setPosition(newPosition);
           }
