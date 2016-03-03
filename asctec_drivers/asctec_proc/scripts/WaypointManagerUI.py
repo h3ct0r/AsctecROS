@@ -54,6 +54,7 @@ class ManUi(QtGui.QMainWindow):
       self.ui.flightPathCheckbox.clicked.connect(self.flightPathCheckboxEvent)
       self.ui.quadrotorCheckbox.clicked.connect(self.quadrotorCheckboxEvent)
       self.ui.waypointCheckbox.clicked.connect(self.waypointCheckboxEvent)
+      self.ui.trackQuadrotorCheckbox.clicked.connect(self.trackQuadrotorCheckboxEvent)
 
       self.timer.start(200)
 
@@ -150,6 +151,12 @@ class ManUi(QtGui.QMainWindow):
     else:
       self.ui.webView.page().mainFrame().evaluateJavaScript("showWaypoints({0});".format(0))
 
+  def trackQuadrotorCheckboxEvent(self):
+      if self.ui.trackQuadrotorCheckbox.isChecked() is True:
+          self.ui.webView.page().mainFrame().evaluateJavaScript("trackMarker({0});".format(1))
+      else:
+          self.ui.webView.page().mainFrame().evaluateJavaScript("trackMarker({0});".format(0))
+
   def loop(self):
     try:
       if self.thread.wm.managerStatus is 0:
@@ -163,8 +170,8 @@ class ManUi(QtGui.QMainWindow):
       currentWaypointIndex = self.thread.wm.currentWaypointIndex
       self.ui.waypointIndexText.setText(str(currentWaypointIndex+1) + " of " + str(self.thread.wm.waypointListSize))
       self.ui.waypointDistanceText.setText(str(self.thread.wm.quad.distanceToWp))
-      self.ui.waypointLatitudeText.setText(str(self.thread.wm.waypointList[currentWaypointIndex]['lng']))
-      self.ui.waypointLongitudeText.setText(str(self.thread.wm.waypointList[currentWaypointIndex]['lat']))
+      self.ui.waypointLatitudeText.setText(str(self.thread.wm.waypointList[currentWaypointIndex]['lat']))
+      self.ui.waypointLongitudeText.setText(str(self.thread.wm.waypointList[currentWaypointIndex]['lng']))
       self.ui.waypointHeightText.setText(str(self.thread.wm.quad.height))
       self.ui.waypointVelocityText.setText(str(self.thread.wm.quad.velocity))
 

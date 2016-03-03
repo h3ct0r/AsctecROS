@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'manui.ui'
 #
-# Created: Fri Feb 26 15:54:24 2016
+# Created: Thu Mar  3 16:42:53 2016
 #      by: PyQt4 UI code generator 4.9.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -291,6 +291,10 @@ class Ui_MainWindow(object):
         self.quadrotorCheckbox.setChecked(True)
         self.quadrotorCheckbox.setObjectName(_fromUtf8("quadrotorCheckbox"))
         self.horizontalLayout.addWidget(self.quadrotorCheckbox)
+        self.trackQuadrotorCheckbox = QtGui.QCheckBox(self.centralwidget)
+        self.trackQuadrotorCheckbox.setChecked(True)
+        self.trackQuadrotorCheckbox.setObjectName(_fromUtf8("trackQuadrotorCheckbox"))
+        self.horizontalLayout.addWidget(self.trackQuadrotorCheckbox)
         self.verticalLayout.addLayout(self.horizontalLayout)
         self.line_4 = QtGui.QFrame(self.centralwidget)
         self.line_4.setFrameShape(QtGui.QFrame.HLine)
@@ -473,9 +477,10 @@ class Ui_MainWindow(object):
         self.label_18.setText(QtGui.QApplication.translate("MainWindow", "Manager Status:", None, QtGui.QApplication.UnicodeUTF8))
         self.homeLatitudeText.setText(QtGui.QApplication.translate("MainWindow", "0", None, QtGui.QApplication.UnicodeUTF8))
         self.managerStatusText.setText(QtGui.QApplication.translate("MainWindow", "0", None, QtGui.QApplication.UnicodeUTF8))
-        self.flightPathCheckbox.setText(QtGui.QApplication.translate("MainWindow", "Flight Path", None, QtGui.QApplication.UnicodeUTF8))
-        self.waypointCheckbox.setText(QtGui.QApplication.translate("MainWindow", "Waypoints", None, QtGui.QApplication.UnicodeUTF8))
-        self.quadrotorCheckbox.setText(QtGui.QApplication.translate("MainWindow", "Quadrotor", None, QtGui.QApplication.UnicodeUTF8))
+        self.flightPathCheckbox.setText(QtGui.QApplication.translate("MainWindow", "Show Flight Path", None, QtGui.QApplication.UnicodeUTF8))
+        self.waypointCheckbox.setText(QtGui.QApplication.translate("MainWindow", "Show Waypoints", None, QtGui.QApplication.UnicodeUTF8))
+        self.quadrotorCheckbox.setText(QtGui.QApplication.translate("MainWindow", "Show Quadrotor", None, QtGui.QApplication.UnicodeUTF8))
+        self.trackQuadrotorCheckbox.setText(QtGui.QApplication.translate("MainWindow", "Track Quadrotor", None, QtGui.QApplication.UnicodeUTF8))
         self.label_4.setText(QtGui.QApplication.translate("MainWindow", " 0   ", None, QtGui.QApplication.UnicodeUTF8))
         self.label_6.setText(QtGui.QApplication.translate("MainWindow", "  50", None, QtGui.QApplication.UnicodeUTF8))
         self.label_5.setText(QtGui.QApplication.translate("MainWindow", "100", None, QtGui.QApplication.UnicodeUTF8))

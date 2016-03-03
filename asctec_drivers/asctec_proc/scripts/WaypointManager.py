@@ -22,8 +22,7 @@ class WaypointManager:
         self.externalBaseName = '/' + rospy.get_param("~externalBaseName") # /ext
 
         # Get the Waypoint list and externalWaypoint list from file
-        #self.getWaypointFromFile()
-        self.getWaypointFromTxt()
+        self.getWaypointFromFile()
         self.managerStatus = 0
 
         # Initialize the callbacks and get parameters from Quadrotor
@@ -38,7 +37,6 @@ class WaypointManager:
 
     # Calcute the distance (m) between Waypoint
     def dist(self, lat1, lon1, lat2, lon2):
-        #print lat1, lon1, lat2, lon2
         lat1 = math.radians(lat1)
         lon1 = math.radians(lon1)
         lat2 = math.radians(lat2)
@@ -56,8 +54,6 @@ class WaypointManager:
         print "Distance calculated by manager     :", self.distance
         print "Current Waypoint                   :", self.currentWaypoint['lat'], self.currentWaypoint['lng']
         print "\33[1;91m________________________________________________________________________________\33[0m"
-
-
 
     # This function get the /ext and the /hum*(from respective quadrotor) waypoints from main waypoint file and save in two separated list
     def getWaypointFromFile(self):
@@ -125,9 +121,7 @@ class WaypointManager:
                     self.quad.gotoWaypoint(self.currentWaypoint)
 
                     # This ensures that the waypoints wont jump in the list
-                    # It muss will test if that really occur
                     timer = rospy.get_time()
-                    #while quad.navStatus == 7 or quad.navStatus == 5:
                     while self.quad.navStatus != 0:
                         if (rospy.get_time() - timer) > 2.0:
                             self.quad.gotoWaypoint(self.currentWaypoint)
@@ -266,11 +260,9 @@ class WaypointManager:
                     wt.printWaypointSent(self.currentWaypointIndex, self.currentWaypoint)
 
                     # This ensures that the waypoints wont jump in the list
-                    # It muss will test if that really occur
                     timer = rospy.get_time()
 
                     print "In navStatus ", self.quad.navStatus
-                    #while quad.navStatus == 7 or quad.navStatus == 5:
                     while self.quad.navStatus != 0:
                         if (rospy.get_time() - timer) > 2.0:
                             self.quad.gotoWaypoint(self.currentWaypoint)
@@ -278,7 +270,6 @@ class WaypointManager:
 
                     timer = rospy.get_time()
 
-            #r.sleep()
             rospy.sleep(1)
 
         rospy.sleep(1)

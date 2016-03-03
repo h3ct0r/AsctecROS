@@ -20,6 +20,7 @@ html = """
           var flightPath = 'undefined'
           var flightPlanCoordinates = []
           var map = 'undefined';
+          var isMarkerTracked = 1;
 
 
           /* Initialize function */
@@ -124,6 +125,9 @@ html = """
           /**************************************************************************/
           function updateMarkerPos(lat, lon, name, rot){
             newPosition = new google.maps.LatLng(lat, lon);
+            if (isMarkerTracked){
+                map.setCenter(newPosition);
+            }
             marker.setTitle(name);
             marker.setIcon({
                 path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
@@ -143,6 +147,10 @@ html = """
             }else{
                 marker.setMap(null);
             }
+          }
+
+          function trackMarker(on){
+            isMarkerTracked = on;
           }
           /**************************************************************************/
 

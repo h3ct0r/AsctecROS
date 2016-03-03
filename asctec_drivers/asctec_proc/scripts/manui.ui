@@ -510,7 +510,7 @@
       <item>
        <widget class="QCheckBox" name="flightPathCheckbox">
         <property name="text">
-         <string>Flight Path</string>
+         <string>Show Flight Path</string>
         </property>
         <property name="checked">
          <bool>true</bool>
@@ -520,7 +520,7 @@
       <item>
        <widget class="QCheckBox" name="waypointCheckbox">
         <property name="text">
-         <string>Waypoints</string>
+         <string>Show Waypoints</string>
         </property>
         <property name="checked">
          <bool>true</bool>
@@ -530,7 +530,17 @@
       <item>
        <widget class="QCheckBox" name="quadrotorCheckbox">
         <property name="text">
-         <string>Quadrotor</string>
+         <string>Show Quadrotor</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="trackQuadrotorCheckbox">
+        <property name="text">
+         <string>Track Quadrotor</string>
         </property>
         <property name="checked">
          <bool>true</bool>
@@ -705,7 +715,7 @@
            </sizepolicy>
           </property>
           <property name="text">
-           <string>5000</string>
+           <string>15000</string>
           </property>
          </widget>
         </item>
