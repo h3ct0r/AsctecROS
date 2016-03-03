@@ -18,7 +18,7 @@ class MyThread(QtCore.QThread):
 
   def run(self):
     try:
-      self.wm.run()
+      self.wm.runUI()
       rospy.spin()
     except KeyboardInterrupt:
         print "Shutting down ROS Waypoint Manager"
@@ -40,65 +40,131 @@ class ManUi(QtGui.QMainWindow):
     # Wait to loop ros get some variables
     rospy.sleep(3)
 
-    self.stimer = QtCore.QTimer()
-
     self.timer = QtCore.QTimer()
     QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.loop)
 
   def loadFinished(self):
-      self.stimer.singleShot(100, self.setup)
-      self.timer.start(200)
+      self.ui.quadNameText.setText(self.thread.wm.quad.name)
+      self.ui.webView.page().mainFrame().evaluateJavaScript("initWaypointMarker({0});".format(self.thread.wm.waypointListSize))
+      self.ui.heightSlider.setValue(self.thread.wm.quad.height)
+      self.ui.heightSlider.valueChanged.connect(self.heightSliderEvent)
+      self.ui.velocitySlider.setValue(self.thread.wm.quad.velocity)
+      self.ui.velocitySlider.valueChanged.connect(self.velocitySliderEvent)
 
       self.ui.flightPathCheckbox.clicked.connect(self.flightPathCheckboxEvent)
       self.ui.quadrotorCheckbox.clicked.connect(self.quadrotorCheckboxEvent)
       self.ui.waypointCheckbox.clicked.connect(self.waypointCheckboxEvent)
 
-  def flightPathCheckboxEvent(self):
-      if self.ui.flightPathCheckbox.isChecked() is True:
-          self.ui.webView.page().mainFrame().evaluateJavaScript("showFlighPath({0});".format(1))
-      else:
-          self.ui.webView.page().mainFrame().evaluateJavaScript("showFlighPath({0});".format(0))
+      self.timer.start(200)
 
+      self.ui.launchButton.clicked.connect(self.launchButtonEvent)
+      self.ui.setHomeButton.clicked.connect(self.setHomeButtonEvent)
+      self.ui.startWaypointListButton.clicked.connect(self.startWaypointListButtonEvent)
+      self.ui.comeHomeButton.clicked.connect(self.comeHomeButtonEvent)
+      self.ui.landButton.clicked.connect(self.landButtonEvent)
+      self.ui.autonomousNavigationButton.clicked.connect(self.autonomousNavigationButtonEvent)
+
+  def velocitySliderEvent(self):
+      self.thread.wm.quad.velocity = self.ui.velocitySlider.value()
+
+  def heightSliderEvent(self):
+      self.thread.wm.quad.height = self.ui.heightSlider.value()
+
+  def autonomousNavigationButtonEvent(self):
+    self.ui.autonomousNavigationButton.setEnabled(False)
+    self.ui.launchButton.setEnabled(False)
+    self.ui.setHomeButton.setEnabled(False)
+    self.ui.startWaypointListButton.setEnabled(False)
+    self.ui.comeHomeButton.setEnabled(True)
+    self.ui.landButton.setEnabled(True)
+    self.thread.wm.managerStatus = 2
+    # set state to 2
+
+
+  def launchButtonEvent(self):
+    self.ui.launchButton.setEnabled(False)
+    self.ui.autonomousNavigationButton.setEnabled(False)
+    self.ui.setHomeButton.setEnabled(True)
+    self.ui.startWaypointListButton.setEnabled(False)
+    self.ui.comeHomeButton.setEnabled(False)
+    self.ui.landButton.setEnabled(True)
+    self.thread.wm.managerStatus = 1
+    # set state to 1
+
+  def setHomeButtonEvent(self):
+    self.ui.launchButton.setEnabled(False)
+    self.ui.autonomousNavigationButton.setEnabled(False)
+    self.ui.setHomeButton.setEnabled(False)
+    self.ui.startWaypointListButton.setEnabled(True)
+    self.ui.comeHomeButton.setEnabled(True)
+    self.ui.landButton.setEnabled(True)
+    self.thread.wm.managerStatus = 5
+    # set state to 5
+
+  def startWaypointListButtonEvent(self):
+    self.ui.launchButton.setEnabled(False)
+    self.ui.autonomousNavigationButton.setEnabled(False)
+    self.ui.setHomeButton.setEnabled(False)
+    self.ui.startWaypointListButton.setEnabled(False)
+    self.ui.comeHomeButton.setEnabled(True)
+    self.ui.landButton.setEnabled(True)
+    self.thread.wm.managerStatus = 6
+    # set state to 6
+
+  def comeHomeButtonEvent(self):
+    self.ui.launchButton.setEnabled(False)
+    self.ui.autonomousNavigationButton.setEnabled(False)
+    self.ui.setHomeButton.setEnabled(False)
+    self.ui.startWaypointListButton.setEnabled(True)
+    self.ui.comeHomeButton.setEnabled(False)
+    self.ui.landButton.setEnabled(True)
+    self.thread.wm.managerStatus = 3
+    # set state to 3
+
+  def landButtonEvent(self):
+    self.ui.launchButton.setEnabled(True)
+    self.ui.autonomousNavigationButton.setEnabled(True)
+    self.ui.setHomeButton.setEnabled(False)
+    self.ui.startWaypointListButton.setEnabled(False)
+    self.ui.comeHomeButton.setEnabled(False)
+    self.ui.landButton.setEnabled(False)
+    self.thread.wm.managerStatus = 0
+    # set state to 4
+
+
+  def flightPathCheckboxEvent(self):
+    if self.ui.flightPathCheckbox.isChecked() is True:
+      self.ui.webView.page().mainFrame().evaluateJavaScript("showFlighPath({0});".format(1))
+    else:
+      self.ui.webView.page().mainFrame().evaluateJavaScript("showFlighPath({0});".format(0))
 
   def quadrotorCheckboxEvent(self):
-      if self.ui.quadrotorCheckbox.isChecked() is True:
-          self.ui.webView.page().mainFrame().evaluateJavaScript("showMarkerPos({0});".format(1))
-      else:
-          self.ui.webView.page().mainFrame().evaluateJavaScript("showMarkerPos({0});".format(0))
+    if self.ui.quadrotorCheckbox.isChecked() is True:
+      self.ui.webView.page().mainFrame().evaluateJavaScript("showMarkerPos({0});".format(1))
+    else:
+      self.ui.webView.page().mainFrame().evaluateJavaScript("showMarkerPos({0});".format(0))
 
   def waypointCheckboxEvent(self):
-      if self.ui.waypointCheckbox.isChecked() is True:
-          self.ui.webView.page().mainFrame().evaluateJavaScript("showWaypoints({0});".format(1))
-      else:
-          self.ui.webView.page().mainFrame().evaluateJavaScript("showWaypoints({0});".format(0))
-
-
-  def setup(self):
-    try:
-      self.ui.quadNameText.setText(self.thread.wm.quad.name)
-      self.ui.webView.page().mainFrame().evaluateJavaScript("initWaypointMarker({0});".format(self.thread.wm.waypointListSize))
-      self.ui.heightSlider.setValue(self.thread.wm.quad.height)
-      self.ui.velocitySlider.setValue(self.thread.wm.quad.velocity)
-
-      #self.thread.wm.quad.latitude = -19.8695912 # apagar depois de ativar o gps
-      #self.thread.wm.quad.longitude = -43.9583309
-    except RuntimeWarning():
-      pass
+    if self.ui.waypointCheckbox.isChecked() is True:
+      self.ui.webView.page().mainFrame().evaluateJavaScript("showWaypoints({0});".format(1))
+    else:
+      self.ui.webView.page().mainFrame().evaluateJavaScript("showWaypoints({0});".format(0))
 
   def loop(self):
     try:
+      if self.thread.wm.managerStatus is 0:
+        self.ui.launchButton.setEnabled(True)
+        self.ui.autonomousNavigationButton.setEnabled(True)
+
       self.ui.batteryBar.setValue(self.thread.wm.quad.batteryPercent)
       self.ui.navigationStatusText.setText(str(self.thread.wm.quad.navStatus))
       self.ui.batteryText.setText(str(self.thread.wm.quad.battery))
 
-      self.thread.wm.quad.height = self.ui.heightSlider.value()
-      self.thread.wm.quad.velocity = self.ui.velocitySlider.value()
-
       currentWaypointIndex = self.thread.wm.currentWaypointIndex
       self.ui.waypointIndexText.setText(str(currentWaypointIndex+1) + " of " + str(self.thread.wm.waypointListSize))
       self.ui.waypointDistanceText.setText(str(self.thread.wm.quad.distanceToWp))
-      self.ui.waypointLatitudeText.setText(str(self.thread.wm.waypointList[currentWaypointIndex]['Y']))
-      self.ui.waypointLongitudeText.setText(str(self.thread.wm.waypointList[currentWaypointIndex]['X']))
+      self.ui.waypointLatitudeText.setText(str(self.thread.wm.waypointList[currentWaypointIndex]['lng']))
+      self.ui.waypointLongitudeText.setText(str(self.thread.wm.waypointList[currentWaypointIndex]['lat']))
       self.ui.waypointHeightText.setText(str(self.thread.wm.quad.height))
       self.ui.waypointVelocityText.setText(str(self.thread.wm.quad.velocity))
 
@@ -113,10 +179,8 @@ class ManUi(QtGui.QMainWindow):
       self.ui.homeLongitudeText.setText(str(self.thread.wm.quad.homeLongitude))
       self.ui.homeAltitudeText.setText(str(self.thread.wm.quad.homeAltitude))
 
+      self.ui.managerStatusText.setText(str(self.thread.wm.managerStatus))
 
-      #import random
-      #self.thread.wm.quad.latitude += random.uniform(-0.000003, 0.000009) # Lembrete: GPS em quadrotor esta desativado
-      #self.thread.wm.quad.longitude += random.uniform(-0.000003, 0.000009)
       lat = self.thread.wm.quad.latitude
       lng = self.thread.wm.quad.longitude
       heading = self.thread.wm.quad.heading
@@ -124,12 +188,13 @@ class ManUi(QtGui.QMainWindow):
       cmd = "updateMarkerPos({0}, {1}, '{2}', {3});".format(lat, lng, self.thread.wm.quad.name, heading)
       self.ui.webView.page().mainFrame().evaluateJavaScript(cmd)
       self.ui.webView.page().mainFrame().evaluateJavaScript("updateFlighPath({0}, {1});".format(lat, lng))
+      self.thread.wm.quad.logFile.write(str(lat) + ', ' + str(lng) + ', ' + str(self.thread.wm.quad.heightImu) + '\n')
 
       lat = []
       lng = []
       for waypoint in self.thread.wm.waypointList:
-          lat.append(waypoint['Y'])
-          lng.append(waypoint['X'])
+          lat.append(waypoint['lat'])
+          lng.append(waypoint['lng'])
       cmd = "updateMarkerWaypoint({0}, {1});".format(lat, lng)
       self.ui.webView.page().mainFrame().evaluateJavaScript(cmd)
     except RuntimeWarning():
