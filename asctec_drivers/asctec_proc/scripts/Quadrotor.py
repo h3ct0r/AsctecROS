@@ -1,10 +1,7 @@
 #!/usr/bin/python
-
-
 import rospy
 import time
 import datetime
-
 
 from asctec_msgs.msg import LLStatus
 from asctec_msgs.msg import IMUCalcData
@@ -16,7 +13,6 @@ from asctec_msgs.msg import WaypointData
 from Waypoint import Waypoint
 
 class Quadrotor:
-
 	def __init__(self, VERBOSE=0):
 		self.VERBOSE = VERBOSE
 
@@ -68,7 +64,10 @@ class Quadrotor:
 		# Enable the Quadrotor to use the external waypoints
 		self.thisQuadisRunningExternalWaypoints = False;
 
-
+		# log height latitude and longitude
+		fileName = rospy.get_param("~mapFileName", "/tmp/out.txt")
+		self.logFile = open(fileName+'.txt', 'w')
+		self.logFile.write("Latitude, Longitude, HeightImu\n")
 
 	# Print informations about the status of Quadrotor
 	def printStatus(self):
@@ -93,23 +92,19 @@ class Quadrotor:
 		print "Waypoint Velocity                  :", self.velocity, "%"
 		print "\33[1;91m________________________________________________________________________________\33[0m"
 
-
-
-
 ####################################### Callbacks ##################################################
 
 	def gpsCallback(self, data):
 		self.latitude = float(data.latitude)/float(10**7)
 		self.longitude = float(data.longitude)/float(10**7)
 		self.altitude = float(data.height)/1000.0
-		self.heading = float(data.heading)/1000.0
 		self.gpsNumSV = int(data.numSV)
 		self.gpsSpeedx = int(data.speed_x)
 		self.gpsSpeedy = int(data.speed_y)
 
 	def llCallback(self, data):
 		self.battery = float(data.battery_voltage_1)/1000.0
-		self.batteryPercent = int(100*(self.battery - 10.2)/(12.5-10.2))
+		self.batteryPercent = int(100*(self.battery - 10.2)/(12.6-10.2))
 
 	def currentwCallback(self, data):
 		self.navStatus = int(data.navigation_status)
@@ -118,8 +113,7 @@ class Quadrotor:
 	def imuCalcDataCallback(self, data):
 		self.heightImu = int(data.height) #height after data fusion [mm]
 		# self.height_val = int(data.height_reference) # height measured by the pressure sensor [mm]
-		self.height = rospy.get_param("~height")
-		self.velocity = rospy.get_param("~velocity")
+		self.heading = float(data.mag_heading)/float(1000)
 ###################################################################################################		
 
 
@@ -133,13 +127,11 @@ class Quadrotor:
 		if self.VERBOSE:
 			print "Home Waypoint "+str(self.homeLatitude)+" latitude "+str(self.longitude)+" longitude"
 
-
 	def launchQuadrotor(self):
 		wpCommand = WaypointCommand()
 		wpCommand.cmd = ">*>wl"
 		wpCommand.header.stamp = rospy.get_rostime()
 		self.waypointCmdPublisher.publish(wpCommand)
-
 
 	def landQuadrotor(self):
 		wpCommand = WaypointCommand()
@@ -147,13 +139,11 @@ class Quadrotor:
 		wpCommand.header.stamp = rospy.get_rostime()
 		self.waypointCmdPublisher.publish(wpCommand)
 
-
 	def comeHomeQuadrotor(self):
 		wpCommand = WaypointCommand()
 		wpCommand.cmd = ">*>wh"
 		wpCommand.header.stamp = rospy.get_rostime()
 		self.waypointCmdPublisher.publish(wpCommand)
-
 
 	def gotoWaypoint(self, currentWp):
 		#Before the command was set to send before the waypoint is ready. Was moved to here in the code.
@@ -162,7 +152,12 @@ class Quadrotor:
 		wpCommand.header.stamp = rospy.get_rostime()
 		self.waypointCmdPublisher.publish(wpCommand)
 
-		wp = Waypoint(currentWp['X'], currentWp['Y'], self.height, 0, self.velocity, self.waypointTime)
+		if currentWp['height'] == None:
+			wp = Waypoint(currentWp['lng'], currentWp['lat'], self.height, 0, self.velocity, self.waypointTime)
+		else:
+			wp = Waypoint(currentWp['lng'], currentWp['lat'], currentWp['height'], 0, self.velocity, self.waypointTime)
+			self.height = currentWp['height']
+
 		wp.getWaypoint() #usado para calcular chksum e parametros restantes nao inicializados
 		waypointData = wp.getWaypointStruct()
 		waypointData.header.stamp = rospy.get_rostime()
