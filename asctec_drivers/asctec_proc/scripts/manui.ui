@@ -138,6 +138,13 @@
       </item>
       <item>
        <layout class="QGridLayout" name="gridLayout_2">
+        <item row="31" column="0">
+         <widget class="QPushButton" name="loadWaypointButton">
+          <property name="text">
+           <string>Load Waypoint</string>
+          </property>
+         </widget>
+        </item>
         <item row="17" column="1">
          <widget class="QLabel" name="gpsSatelitesText">
           <property name="text">
@@ -170,6 +177,13 @@
          <widget class="QLabel" name="label_17">
           <property name="text">
            <string>Imu Height:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="25" column="1">
+         <widget class="QLabel" name="homeLongitudeText">
+          <property name="text">
+           <string>0</string>
           </property>
          </widget>
         </item>
@@ -208,7 +222,7 @@
           </property>
          </widget>
         </item>
-        <item row="29" column="0">
+        <item row="30" column="0">
          <spacer name="verticalSpacer_2">
           <property name="orientation">
            <enum>Qt::Vertical</enum>
@@ -316,13 +330,6 @@
          <widget class="QLabel" name="label_35">
           <property name="text">
            <string>Home Longitude:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="25" column="1">
-         <widget class="QLabel" name="homeLongitudeText">
-          <property name="text">
-           <string>0</string>
           </property>
          </widget>
         </item>
@@ -491,6 +498,13 @@
          <widget class="Line" name="line_10">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item row="32" column="0">
+         <widget class="QPushButton" name="saveMapButton">
+          <property name="text">
+           <string>Save Plot Maps</string>
           </property>
          </widget>
         </item>

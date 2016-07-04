@@ -1,4 +1,10 @@
 #!/usr/bin/python
+
+"""
+    Add time of flight
+    Add time on log file
+    Add support to save the gmap as image
+"""
 import roslib; roslib.load_manifest('asctec_mon')
 import sys
 import rospy
@@ -44,6 +50,7 @@ class ManUi(QtGui.QMainWindow):
     QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.loop)
 
   def loadFinished(self):
+      self.loadWaypointButtonEvent()
       self.ui.quadNameText.setText(self.thread.wm.quad.name)
       self.ui.webView.page().mainFrame().evaluateJavaScript("initWaypointMarker({0});".format(self.thread.wm.waypointListSize))
       self.ui.heightSlider.setValue(self.thread.wm.quad.height)
@@ -64,12 +71,29 @@ class ManUi(QtGui.QMainWindow):
       self.ui.comeHomeButton.clicked.connect(self.comeHomeButtonEvent)
       self.ui.landButton.clicked.connect(self.landButtonEvent)
       self.ui.autonomousNavigationButton.clicked.connect(self.autonomousNavigationButtonEvent)
+      self.ui.loadWaypointButton.clicked.connect(self.loadWaypointButtonEvent)
 
   def velocitySliderEvent(self):
       self.thread.wm.quad.velocity = self.ui.velocitySlider.value()
 
   def heightSliderEvent(self):
       self.thread.wm.quad.height = self.ui.heightSlider.value()
+
+  def loadWaypointButtonEvent(self):
+      filename = QtGui.QFileDialog.getOpenFileName(self)
+
+      self.wm.waypointFile = filename
+      ext = filename.split('.')
+      ext = ext[-1]
+      if  ext == "json":
+          print "Loading waypoints from json " + filename
+          self.wm.getWaypointFromJson()
+      elif ext == "txt":
+          print "Loading waypoints from txt " + filename
+          self.wm.getWaypointFromFile()
+
+
+
 
   def autonomousNavigationButtonEvent(self):
     self.ui.autonomousNavigationButton.setEnabled(False)
@@ -168,10 +192,16 @@ class ManUi(QtGui.QMainWindow):
       self.ui.batteryText.setText(str(self.thread.wm.quad.battery))
 
       currentWaypointIndex = self.thread.wm.currentWaypointIndex
-      self.ui.waypointIndexText.setText(str(currentWaypointIndex+1) + " of " + str(self.thread.wm.waypointListSize))
+      currentHexagonIndex = self.thread.wm.currentHexagonIndex
+      waypoint = self.thread.wm.hexagonList[currentHexagonIndex][currentWaypointIndex]
+
+      #self.ui.waypointIndexText.setText(str(currentWaypointIndex+1) + " of " + str(self.thread.wm.waypointListSize))
+      self.ui.waypointIndexText.setText("W(" + str(currentWaypointIndex+1) + ", " + str(len(self.thread.wm.hexagonList[currentHexagonIndex])) + ") " +
+                                        "of H(" + str(currentHexagonIndex+1) + ", " + str(len(self.thread.wm.hexagonList)) + ")")
       self.ui.waypointDistanceText.setText(str(self.thread.wm.quad.distanceToWp))
-      self.ui.waypointLatitudeText.setText(str(self.thread.wm.waypointList[currentWaypointIndex]['lat']))
-      self.ui.waypointLongitudeText.setText(str(self.thread.wm.waypointList[currentWaypointIndex]['lng']))
+
+      self.ui.waypointLatitudeText.setText(str(waypoint['lat']))
+      self.ui.waypointLongitudeText.setText(str(waypoint['lng']))
       self.ui.waypointHeightText.setText(str(self.thread.wm.quad.height))
       self.ui.waypointVelocityText.setText(str(self.thread.wm.quad.velocity))
 
@@ -199,9 +229,11 @@ class ManUi(QtGui.QMainWindow):
 
       lat = []
       lng = []
-      for waypoint in self.thread.wm.waypointList:
-          lat.append(waypoint['lat'])
-          lng.append(waypoint['lng'])
+
+      for hexagon in self.thread.wm.hexagonList:
+        for waypoint in hexagon:
+            lat.append(waypoint['lat'])
+            lng.append(waypoint['lng'])
       cmd = "updateMarkerWaypoint({0}, {1});".format(lat, lng)
       self.ui.webView.page().mainFrame().evaluateJavaScript(cmd)
     except RuntimeWarning():
