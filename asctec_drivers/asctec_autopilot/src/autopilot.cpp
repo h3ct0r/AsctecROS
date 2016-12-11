@@ -22,7 +22,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "asctec_autopilot/autopilot.h"
+#include <asctec_autopilot/autopilot.h>
 
 namespace asctec
 {

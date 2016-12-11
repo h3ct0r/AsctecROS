@@ -1,2 +1,0 @@
-- setup-file:
-    local-name: /opt/ros/groovy/share/asctec_drivers/asctec_msgs/build/devel/setup.sh

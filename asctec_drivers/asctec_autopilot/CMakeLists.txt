@@ -1,34 +1,51 @@
-cmake_minimum_required(VERSION 2.4.6)
-include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
+cmake_minimum_required(VERSION 2.8.3)
+project(asctec_autopilot)
 
-# Set the build type.  Options are:
-#  Coverage       : w/ debug symbols, w/o optimization, w/ code-coverage
-#  Debug          : w/ debug symbols, w/o optimization
-#  Release        : w/o debug symbols, w/ optimization
-#  RelWithDebInfo : w/ debug symbols, w/ optimization
-#  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
-set(ROS_BUILD_TYPE RelWithDebInfo)
+find_package(catkin REQUIRED COMPONENTS 
+  geometry_msgs
+  nav_msgs
+  roscpp
+  rospy
+  sensor_msgs
+  std_msgs
+  nodelet
+  diagnostic_updater
+  asctec_msgs
+)
 
-rosbuild_init()
 
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
-set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
+#generate_messages(
+#  DEPENDENCIES
+#  asctec_msgs
+#)
 
-include_directories (${CMAKE_CURRENT_BINARY_DIR})
+catkin_package(
+  INCLUDE_DIRS include
+#  LIBRARIES tp2
+#  CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy sensor_msgs std_msgs nodelet diagnostic_updater asctec_msgs
+#  DEPENDS system_lib
+)
 
-# create autopilot library
+include_directories( include
+  ${catkin_INCLUDE_DIRS}
+)
 
-rosbuild_add_library (autopilot src/autopilot.cpp
+add_library(autopilot_nodelet src/autopilot_nodelet.cpp)
+add_dependencies(autopilot_nodelet ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+#add_executable(autopilot_node src/autopilot_node.cpp)
+#add_dependencies(autopilot_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#target_link_libraries(autopilot_node autopilot_nodelet
+#   ${catkin_LIBRARIES}
+#)
+
+add_executable(autopilot_node src/autopilot_node.cpp
+                                src/autopilot.cpp
                                 src/serial_interface.cpp
                                 src/crc16.cpp 
                                 src/telemetry.cpp)
+add_dependencies(autopilot_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-# create autopilot_nodelet library
-
-rosbuild_add_library (autopilot_nodelet src/autopilot_nodelet.cpp)
-target_link_libraries (autopilot_nodelet autopilot)
-
-# create autopilot_node executable
-
-rosbuild_add_executable(autopilot_node src/autopilot_node.cpp)
-target_link_libraries (autopilot_node autopilot)
+target_link_libraries(autopilot_node autopilot_nodelet
+   ${catkin_LIBRARIES}
+)

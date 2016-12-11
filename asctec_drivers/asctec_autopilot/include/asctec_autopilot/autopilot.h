@@ -36,9 +36,9 @@
 #include <diagnostic_updater/diagnostic_updater.h>
 #include <asctec_msgs/common.h> // for namespace and topic names
 
-#include "asctec_autopilot/crc16.h"
-#include "asctec_autopilot/telemetry.h"
-#include "asctec_autopilot/serialinterface.h"
+#include <asctec_autopilot/crc16.h>
+#include <asctec_autopilot/telemetry.h>
+#include <asctec_autopilot/serialinterface.h>
 
 //const std::string rawdata_namespace_ = "asctec";
 

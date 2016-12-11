@@ -1,7 +1,7 @@
 # Software License Agreement (BSD License)
 #
-# Copyright (c) 2014
-#  Hector Azpurua <hector.azpurua@dcc.ufmg.br>
+# Copyright (c) 2010
+#  Ivan Dryanovski <ivan.dryanovski@gmail.com>
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -32,15 +32,9 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 Header header
-# See http://asctec-users.986163.n3.nabble.com/How-to-see-if-the-UAV-has-reached-a-waypoint-td3245304.html
-# for clarification
-# _CurrentWay
-uint8 dummy1
-uint8 properties
-uint16 nr_of_wp
-uint8 current_wp
-uint8 current_wp_memlocation
-uint8 status
-uint8 dummy2
-uint16 navigation_status
-uint16 distance_to_wp
+
+float64 height
+float64 height_variance
+
+float64 climb
+float64 climb_variance
