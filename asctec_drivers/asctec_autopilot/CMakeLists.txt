@@ -30,22 +30,24 @@ include_directories( include
   ${catkin_INCLUDE_DIRS}
 )
 
+add_library(autopilot src/autopilot.cpp
+                      src/serial_interface.cpp
+                      src/crc16.cpp 
+                      src/telemetry.cpp)
+add_dependencies(autopilot ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
 add_library(autopilot_nodelet src/autopilot_nodelet.cpp)
 add_dependencies(autopilot_nodelet ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-#add_executable(autopilot_node src/autopilot_node.cpp)
-#add_dependencies(autopilot_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-#target_link_libraries(autopilot_node autopilot_nodelet
-#   ${catkin_LIBRARIES}
-#)
+target_link_libraries (autopilot_nodelet autopilot
+	   ${catkin_LIBRARIES}
+)
 
-add_executable(autopilot_node src/autopilot_node.cpp
-                                src/autopilot.cpp
-                                src/serial_interface.cpp
-                                src/crc16.cpp 
-                                src/telemetry.cpp)
+
+
+add_executable(autopilot_node src/autopilot_node.cpp)
 add_dependencies(autopilot_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(autopilot_node autopilot_nodelet
+target_link_libraries(autopilot_node autopilot
    ${catkin_LIBRARIES}
 )

@@ -27,8 +27,8 @@ class Quadrotor:
 			print "Default "+ str(self.height)+"cm height and "+ str(self.velocity)+"%"+" velocity\n"
 
 		# Setting the ROS publishers
-		self.waypointCmdPublisher = rospy.Publisher(self.name + '/asctec/WAYCOMMAND', WaypointCommand)
-		self.waypointDataPublisher = rospy.Publisher(self.name + '/asctec/WAYPOINT', WaypointData)
+		self.waypointCmdPublisher = rospy.Publisher(self.name + '/asctec/WAYCOMMAND', WaypointCommand, queue_size=10)
+		self.waypointDataPublisher = rospy.Publisher(self.name + '/asctec/WAYPOINT', WaypointData, queue_size=10)
 
 		# Setting the ROS subscribers
 		rospy.Subscriber(self.name + "/asctec/LL_STATUS", LLStatus, self.llCallback)
